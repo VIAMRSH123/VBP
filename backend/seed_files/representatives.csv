@@ -1,0 +1,7 @@
+RepresentativeID,RepresentativeName,Territory,Region,ProductCategory,Language,Manager,ManagerPhone,Email,Phone,Workload,ActiveFlag
+REP-001,Sara Al-Emadi,Doha,Central,Paper Products,English,Youssef Hassan,+97444001001,sara.alemadi@company.com,+97455001001,3,true
+REP-002,Khalid Rahman,Al Rayyan,Central,Building Materials,English,Youssef Hassan,+97444001001,khalid.rahman@company.com,+97455001002,5,true
+REP-003,Mariam Saeed,Doha,Central,Software,Arabic,Youssef Hassan,+97444001001,mariam.saeed@company.com,+97455001003,2,true
+REP-004,John Peterson,Al Wakrah,Southern,Office Furniture,English,Layla Ibrahim,+97444001002,john.peterson@company.com,+97455001004,4,true
+REP-005,Aisha Al-Kuwari,Al Khor,Northern,Consumables,Arabic,Layla Ibrahim,+97444001002,aisha.alkuwari@company.com,+97455001005,1,true
+REP-006,Ravi Nair,Doha,Central,Chemicals,English,Youssef Hassan,+97444001001,ravi.nair@company.com,+97455001006,6,true

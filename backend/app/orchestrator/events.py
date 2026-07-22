@@ -1,0 +1,12 @@
+"""Standard event bus event types — Blueprint Part 6."""
+
+LEAD_CREATED = "LeadCreated"
+LEAD_UPDATED = "LeadUpdated"
+LEAD_ASSIGNED = "LeadAssigned"
+LEAD_ENRICHED = "LeadEnriched"
+REMINDER_TRIGGERED = "ReminderTriggered"
+REMINDER_ESCALATED = "ReminderEscalated"
+DASHBOARD_REFRESHED = "DashboardRefreshed"
+NOTIFICATION_SENT = "NotificationSent"
+CSV_UPLOADED = "CSVUploaded"
+PIPELINE_FAILED = "PipelineFailed"
