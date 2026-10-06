@@ -19,9 +19,10 @@ export function RepFilterSelect({ value, onChange }: RepFilterSelectProps) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="glass-select px-4 py-2"
+      className="input-field"
+      aria-label="Filter by sales representative"
     >
-      <option value="">All Sales Reps</option>
+      <option value="">All sales reps</option>
       {reps?.map((rep) => (
         <option key={rep.id} value={rep.id}>
           {rep.name}

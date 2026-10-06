@@ -1,39 +1,54 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { IconInfo } from "./icons";
 
 interface KpiTileProps {
   label: string;
   value: ReactNode;
   description: string;
+  hint?: string;
   tone?: "default" | "success" | "danger";
+  featured?: boolean;
 }
 
-export function KpiTile({ label, value, description, tone = "default" }: KpiTileProps) {
+export function KpiTile({ label, value, description, hint, tone = "default", featured = false }: KpiTileProps) {
+  const tooltipId = useId();
   const color = tone === "danger" ? "var(--danger)" : tone === "success" ? "var(--success)" : "var(--ink)";
 
   return (
-    <div className="group glass-tile relative overflow-hidden p-5">
+    <div className={`card card-interactive ${featured ? "p-5" : "p-4"}`}>
       <div className="flex items-center gap-1.5">
         <p className="eyebrow">{label}</p>
-        <IconInfo width={12} height={12} style={{ color: "var(--ink-tertiary)" }} />
+        <span className="group relative inline-flex">
+          <button
+            type="button"
+            aria-label={`About ${label}`}
+            aria-describedby={tooltipId}
+            className="inline-flex rounded-sm transition-colors"
+            style={{ color: "var(--ink-tertiary)" }}
+          >
+            <IconInfo width={12} height={12} />
+          </button>
+          <span
+            id={tooltipId}
+            role="tooltip"
+            className="popover pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-52 -translate-x-1/2 px-2.5 py-2 text-xs leading-snug opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
+            style={{ color: "var(--ink-secondary)", animation: "none", transformOrigin: "bottom center" }}
+          >
+            {description}
+          </span>
+        </span>
       </div>
-      <p className="stat-value mt-2" style={{ color }}>{value}</p>
-
-      {/* Contained strictly within the tile's own box (inset-0) so it can never overlap the tab
-          bar, charts, or any other component — it covers this tile's content instead of floating
-          outside it. */}
-      <div
-        role="tooltip"
-        className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 text-center text-xs font-medium leading-snug opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-        style={{
-          background: "var(--glass-surface-strong)",
-          backdropFilter: "blur(16px) saturate(160%)",
-          WebkitBackdropFilter: "blur(16px) saturate(160%)",
-          color: "var(--ink-secondary)",
-        }}
+      <p
+        className={`${featured ? "text-[2rem]" : "stat-value"} mt-2 font-semibold tabular-nums`}
+        style={{ color, letterSpacing: "-0.035em", lineHeight: 1.1 }}
       >
-        {description}
-      </div>
+        {value}
+      </p>
+      {hint && (
+        <p className="mt-1.5 text-xs" style={{ color: "var(--ink-tertiary)" }}>
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

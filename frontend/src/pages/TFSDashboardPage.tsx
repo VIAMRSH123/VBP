@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { useAuthStore } from "../store/authStore";
 import { RepFilterSelect } from "../components/RepFilterSelect";
 import { OverviewTab } from "./dashboard-tabs/OverviewTab";
@@ -32,30 +32,52 @@ export function TFSDashboardPage() {
   // a 403 by clicking a tab they were never meant to see).
   const visibleTabs = isRep ? TABS.filter((tab) => tab.key !== "unassigned" && tab.key !== "rep_performance") : TABS;
 
-  return (
-    <div className="space-y-7">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="glass-tab-bar">
-          {visibleTabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`glass-tab ${activeTab === tab.key ? "glass-tab-active" : ""}`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+  function handleTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
+    const index = visibleTabs.findIndex((tab) => tab.key === activeTab);
+    const step = event.key === "ArrowRight" ? 1 : -1;
+    const next = visibleTabs[(index + step + visibleTabs.length) % visibleTabs.length];
+    setActiveTab(next.key);
+    document.getElementById(`dashboard-tab-${next.key}`)?.focus();
+  }
 
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <div>
+          <p className="eyebrow mb-1.5">Dashboard</p>
+          <h1 className="page-title">Pipeline overview</h1>
+        </div>
         <RepFilterSelect value={representativeId} onChange={setRepresentativeId} />
       </div>
 
-      {activeTab === "overview" && <OverviewTab representativeId={effectiveRepId} />}
-      {activeTab === "engagement" && <EngagementTab representativeId={effectiveRepId} />}
-      {activeTab === "won" && <WonTab representativeId={effectiveRepId} />}
-      {activeTab === "lost" && <LostTab representativeId={effectiveRepId} />}
-      {activeTab === "rep_performance" && !isRep && <RepPerformanceTab representativeId={effectiveRepId} />}
-      {activeTab === "unassigned" && !isRep && <UnassignedTab />}
+      <div role="tablist" aria-label="Dashboard views" className="tab-list" onKeyDown={handleTabKeyDown}>
+        {visibleTabs.map((tab) => (
+          <button
+            key={tab.key}
+            id={`dashboard-tab-${tab.key}`}
+            role="tab"
+            type="button"
+            aria-selected={activeTab === tab.key}
+            aria-controls="dashboard-panel"
+            tabIndex={activeTab === tab.key ? 0 : -1}
+            onClick={() => setActiveTab(tab.key)}
+            className="tab"
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div key={activeTab} id="dashboard-panel" role="tabpanel" aria-labelledby={`dashboard-tab-${activeTab}`} className="tab-enter">
+        {activeTab === "overview" && <OverviewTab representativeId={effectiveRepId} />}
+        {activeTab === "engagement" && <EngagementTab representativeId={effectiveRepId} />}
+        {activeTab === "won" && <WonTab representativeId={effectiveRepId} />}
+        {activeTab === "lost" && <LostTab representativeId={effectiveRepId} />}
+        {activeTab === "rep_performance" && !isRep && <RepPerformanceTab representativeId={effectiveRepId} />}
+        {activeTab === "unassigned" && !isRep && <UnassignedTab />}
+      </div>
     </div>
   );
 }

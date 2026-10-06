@@ -34,26 +34,37 @@ exec@, auditor@company.com with role-named passwords, e.g. `Manager@123`).
 
 ## Design system — IMPORTANT
 
-The frontend visual design was reworked to a **"Dark Enterprise Intelligence"** direction (this
-happened outside the current session's own edits — treat it as the established baseline, do not
-revert): navy/near-black sidebar (`--sidebar-bg`, `--sidebar-*` vars), amber "AI" accent
-(`--ai`, `--ai-bright`, `.card-ai`), Space Grotesk for headings, warm off-white body bg (`--bg`),
-bento-style featured/compact `StatCard` variants, dark glass chart cards (`.card-dark`). Tokens live
-in `frontend/src/index.css`. Do not re-flatten this back to the earlier plain light theme.
+The frontend uses a **Vercel-inspired monochrome system** (redesigned 2026-10-06; it replaced the earlier
+"Dark Enterprise Intelligence" navy/amber/glass look — do not bring that back). The full rules live in
+`docs/DECISIONS.md`; tokens live in `frontend/src/index.css`. In short: neutral palette (light + dark),
+Inter only, 10px cards / 6px controls, 1px borders, no card shadows, colour only for meaning (green
+positive, red critical, amber warning, blue info), amber reserved for the AI "Next Best Action" card.
 
-**TFS branding**: logo at `frontend/public/tfs-logo.png`, used in a frosted glass chip on the login
-page (`LoginPage.tsx`) and in the Dashboard header (`layouts/TopBarLayout.tsx`). Login copy says
-"Telangana Food Suncons."
+**Shared components are the system** — build new UI from them rather than one-off markup:
+`DataTable` (sorting, pagination, empty state, keyboard rows), `leadColumns` (shared lead columns),
+`EmptyState`/`ErrorState`, `StatusBadge`/`Badge`, `StatCard`, `KpiTile`, `BarList`, `CategoryBarChart`,
+`ChartTooltip`, `PageHeader`, `CommandPalette`.
 
-**Dashboard structure**: sidebar was replaced with a top bar (`TopBarLayout.tsx`) + TFS logo + tab bar
-(`pages/TFSDashboardPage.tsx`) with tabs Overview / Engagement / Won / Lost / Rep Performance, each
-filterable by a Sales Rep glass dropdown (`components/RepFilterSelect.tsx`). Tab content lives in
-`pages/dashboard-tabs/*.tsx`. Backend endpoints: `GET /api/dashboard/tabs/{overview,engagement,won,lost}`
-and extended `GET /api/reports/rep-performance`, all accepting `?representative_id=`. Sales reps are
-scoped server-side to their own data regardless of query params (`_scoped_rep_id` in `api/dashboard.py`).
-Secondary pages (Lead Management, full Sales Rep/Manager views, Marketing, Notifications, Operations,
-Administration) are reachable via the glass overflow menu (grid icon, top-right of `TopBarLayout`) —
-nothing was removed, just moved out of a sidebar.
+**TFS branding**: logo at `frontend/public/tfs-logo.png` (+ `tfs-logo-transparent.png` for dark mode);
+`components/TfsMark.tsx` swaps between them by theme.
+
+**Shell** (`layouts/TopBarLayout.tsx`): two-tier header — logo / product name, centred ⌘K search
+(command palette: jump to any page you have access to, toggle theme, log out, or "Search leads for …"
+which opens `/leads?q=…`), notifications, theme toggle and account menu; below it a tab strip with every
+nav item (`components/navConfig.ts`, role-filtered). Route changes get a subtle fade (`page-enter`).
+
+**Dashboard structure**: `pages/TFSDashboardPage.tsx` has accessible underline tabs (Overview /
+Engagement / Won / Lost / Rep Performance / Unassigned) plus a rep filter (`RepFilterSelect`). Tab content
+lives in `pages/dashboard-tabs/*.tsx`. Overview leads with one primary KPI (Pipeline Value) and
+supporting KPIs whose context lines are computed from real data (no invented trends). Backend endpoints:
+`GET /api/dashboard/tabs/{overview,engagement,won,lost,unassigned}` and `GET /api/reports/rep-performance`,
+all accepting `?representative_id=`. Sales reps are scoped server-side to their own data regardless of
+query params (`_scoped_rep_id` in `api/dashboard.py`).
+
+**Warehouse page** (`/warehouse`, `pages/WarehousePage.tsx` + `pages/warehouse/`): isometric SVG map of 6
+warehouses (hover → cyan, click → green, details panel updates), driven entirely by mock data in
+`pages/warehouse/data.ts` — replace that module with an API call when a real inventory source exists.
+The dark stage is intentionally kept in both themes.
 
 ## WhatsApp integration — DONE, verified end-to-end with a real message (2026-07-19)
 

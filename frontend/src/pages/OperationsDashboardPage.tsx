@@ -1,14 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getOperationsDashboard } from "../api/dashboard";
 import { listDeadLetterQueue, replayDlqEntry } from "../api/pipeline";
+import type { OperationsDashboard } from "../types";
 import { StatCard } from "../components/StatCard";
 import { PageSkeleton, ErrorBanner } from "../components/LoadingSpinner";
+import { DataTable, type Column } from "../components/DataTable";
+import { EmptyState } from "../components/EmptyState";
+import { Badge, type BadgeTone } from "../components/StatusBadge";
+import { PageHeader } from "../components/PageHeader";
+import { IconPulse } from "../components/icons";
 
-const STATUS_COLOR: Record<string, string> = {
-  success: "#16a34a",
-  running: "#2563eb",
-  dead_letter: "#dc2626",
+type Execution = OperationsDashboard["recent_executions"][number];
+
+const STATUS_TONE: Record<string, BadgeTone> = {
+  success: "success",
+  running: "info",
+  dead_letter: "danger",
+  failed: "danger",
 };
+
+const COLUMNS: Column<Execution>[] = [
+  { key: "workflow_name", header: "Workflow", sortValue: (e) => e.workflow_name, cell: (e) => <span style={{ color: "var(--ink)" }}>{e.workflow_name}</span> },
+  { key: "current_stage", header: "Stage", sortValue: (e) => e.current_stage, cell: (e) => e.current_stage },
+  { key: "status", header: "Status", sortValue: (e) => e.status, cell: (e) => <Badge tone={STATUS_TONE[e.status] ?? "neutral"} label={e.status.replace(/_/g, " ")} /> },
+  { key: "retry_count", header: "Retries", numeric: true, sortValue: (e) => e.retry_count, cell: (e) => e.retry_count },
+  { key: "started_at", header: "Started", sortValue: (e) => new Date(e.started_at).getTime(), cell: (e) => new Date(e.started_at).toLocaleString() },
+];
 
 export function OperationsDashboardPage() {
   const queryClient = useQueryClient();
@@ -29,73 +46,52 @@ export function OperationsDashboardPage() {
   const ops = opsQuery.data;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="eyebrow mb-2">Operations</p>
-        <h1 className="page-title">Operations Dashboard</h1>
-        <p className="mt-2 text-[15px]" style={{ color: "var(--ink-secondary)" }}>
-          Pipeline Orchestrator monitoring &amp; recovery
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader eyebrow="Operations" title="Operations Dashboard" description="Pipeline Orchestrator monitoring & recovery" />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <StatCard label="Success Rate" value={`${ops.workflow_success_rate}%`} />
-        <StatCard label="Total Executions" value={ops.total_executions} />
+        <StatCard label="Success rate" value={`${ops.workflow_success_rate}%`} />
+        <StatCard label="Total executions" value={ops.total_executions} />
         <StatCard label="Successful" value={ops.successful} tone="success" />
         <StatCard label="Running" value={ops.running} />
-        <StatCard label="Dead Letter Queue" value={ops.dead_letter_queue_length} tone={ops.dead_letter_queue_length > 0 ? "danger" : "default"} />
+        <StatCard label="Dead letter queue" value={ops.dead_letter_queue_length} tone={ops.dead_letter_queue_length > 0 ? "danger" : "default"} />
       </div>
 
-      <div className="card p-6">
-        <p className="card-title mb-5">Recent Pipeline Executions</p>
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--border)" }}>
-              {["Workflow", "Stage", "Status", "Retries", "Started"].map((h) => (
-                <th key={h} className="table-head-cell px-3 py-3 text-left">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {ops.recent_executions.map((e) => (
-              <tr key={e.id} className="table-row">
-                <td className="px-3 py-3.5" style={{ color: "var(--ink)" }}>{e.workflow_name}</td>
-                <td className="px-3 py-3.5" style={{ color: "var(--ink-secondary)" }}>{e.current_stage}</td>
-                <td className="px-3 py-3.5 font-medium" style={{ color: STATUS_COLOR[e.status] ?? "var(--ink)" }}>{e.status}</td>
-                <td className="px-3 py-3.5 tabular-nums" style={{ color: "var(--ink-secondary)" }}>{e.retry_count}</td>
-                <td className="px-3 py-3.5" style={{ color: "var(--ink-secondary)" }}>{new Date(e.started_at).toLocaleString()}</td>
-              </tr>
+      <section className="space-y-3">
+        <h2 className="card-title">Recent pipeline executions</h2>
+        <DataTable
+          caption="Recent pipeline executions"
+          columns={COLUMNS}
+          rows={ops.recent_executions}
+          rowKey={(e) => e.id}
+          emptyTitle="No executions yet"
+          emptyDescription="Pipeline runs appear here as messages are processed."
+        />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="card-title">Dead letter queue</h2>
+        <div className="card overflow-hidden">
+          {dlqQuery.data && dlqQuery.data.length === 0 && (
+            <EmptyState icon={IconPulse} title="Everything healthy" description="No failed executions are waiting for a replay." />
+          )}
+          <ul>
+            {dlqQuery.data?.map((entry) => (
+              <li key={entry.id} className="flex items-center justify-between gap-4 border-b px-5 py-3.5 last:border-b-0" style={{ borderColor: "var(--border)" }}>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium" style={{ color: "var(--ink)" }}>
+                    {entry.workflow_name} <span style={{ color: "var(--ink-tertiary)" }}>@ {entry.stage}</span>
+                  </p>
+                  <p className="mt-0.5 truncate text-xs" style={{ color: "var(--danger)" }}>{entry.error_details}</p>
+                </div>
+                <button type="button" onClick={() => replayMutation.mutate(entry.id)} disabled={replayMutation.isPending} className="btn-secondary shrink-0">
+                  Replay
+                </button>
+              </li>
             ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="card p-6">
-        <p className="card-title mb-5">Dead Letter Queue</p>
-        {dlqQuery.data && dlqQuery.data.length === 0 && (
-          <p className="py-10 text-center text-sm" style={{ color: "var(--ink-tertiary)" }}>
-            No failed executions. Everything healthy.
-          </p>
-        )}
-        <ul className="space-y-2.5">
-          {dlqQuery.data?.map((entry) => (
-            <li key={entry.id} className="flex items-center justify-between rounded-2xl p-4 text-sm" style={{ background: "#fef2f2", border: "1px solid #fecaca" }}>
-              <div>
-                <p className="font-medium" style={{ color: "#b91c1c" }}>{entry.workflow_name} @ {entry.stage}</p>
-                <p className="text-xs" style={{ color: "#dc2626" }}>{entry.error_details}</p>
-              </div>
-              <button
-                onClick={() => replayMutation.mutate(entry.id)}
-                disabled={replayMutation.isPending}
-                className="rounded-full px-3.5 py-1.5 text-xs font-medium disabled:opacity-50"
-                style={{ border: "1px solid #fca5a5", color: "#b91c1c" }}
-              >
-                Replay
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+          </ul>
+        </div>
+      </section>
     </div>
   );
 }

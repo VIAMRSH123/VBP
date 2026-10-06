@@ -1,11 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { listLeads } from "../api/leads";
-import { StatusBadge, PriorityBadge } from "../components/StatusBadge";
 import { StatCard } from "../components/StatCard";
 import { PageSkeleton, ErrorBanner } from "../components/LoadingSpinner";
+import { DataTable } from "../components/DataTable";
+import { leadColumns } from "../components/leadColumns";
+import { PageHeader } from "../components/PageHeader";
+import { formatCompactCurrency } from "../lib/format";
 
 const TERMINAL = ["Won", "Lost", "Archived"];
+const COLUMNS = [leadColumns.number, leadColumns.company, leadColumns.product, leadColumns.status, leadColumns.priority, leadColumns.dealValue];
 
 export function SalesRepresentativePage() {
   const navigate = useNavigate();
@@ -24,52 +28,25 @@ export function SalesRepresentativePage() {
   const conversion = data.items.length ? Math.round((won.length / data.items.length) * 100) : 0;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="eyebrow mb-2">My Pipeline</p>
-        <h1 className="page-title">Sales Representative</h1>
-        <p className="mt-2 text-[15px]" style={{ color: "var(--ink-secondary)" }}>
-          Your assigned leads and follow-ups
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader eyebrow="My pipeline" title="Sales Representative" description="Your assigned leads and follow-ups" />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Assigned Leads" value={data.total} />
+        <StatCard label="Assigned leads" value={data.total} />
         <StatCard label="Active" value={active.length} />
-        <StatCard label="Conversion Rate" value={`${conversion}%`} />
-        <StatCard label="Open Pipeline Value" value={`$${totalValue.toLocaleString()}`} />
+        <StatCard label="Conversion rate" value={`${conversion}%`} />
+        <StatCard label="Open pipeline value" value={formatCompactCurrency(totalValue)} />
       </div>
 
-      <div className="card overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--border)" }}>
-              {["Lead #", "Company", "Product", "Status", "Priority", "Deal Value"].map((h) => (
-                <th key={h} className="table-head-cell px-5 py-4 text-left">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.items.map((lead) => (
-              <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)} className="table-row table-row-clickable cursor-pointer">
-                <td className="px-5 py-4 font-medium" style={{ color: "var(--accent)" }}>{lead.lead_number}</td>
-                <td className="px-5 py-4" style={{ color: "var(--ink)" }}>{lead.company}</td>
-                <td className="px-5 py-4" style={{ color: "var(--ink-secondary)" }}>{lead.product}</td>
-                <td className="px-5 py-4"><StatusBadge status={lead.status} /></td>
-                <td className="px-5 py-4"><PriorityBadge priority={lead.priority} /></td>
-                <td className="px-5 py-4 tabular-nums" style={{ color: "var(--ink-secondary)" }}>${lead.deal_size_estimate.toLocaleString()}</td>
-              </tr>
-            ))}
-            {data.items.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-5 py-16 text-center" style={{ color: "var(--ink-tertiary)" }}>
-                  No leads assigned yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        caption="Assigned leads"
+        columns={COLUMNS}
+        rows={data.items}
+        rowKey={(lead) => lead.id}
+        onRowClick={(lead) => navigate(`/leads/${lead.id}`)}
+        emptyTitle="No leads assigned yet"
+        emptyDescription="Leads routed to you will show up here."
+      />
     </div>
   );
 }

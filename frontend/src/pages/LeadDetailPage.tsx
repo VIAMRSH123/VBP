@@ -2,8 +2,11 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getLead, getLeadActivity, updateLeadStatus, getNextBestAction } from "../api/leads";
-import { StatusBadge, PriorityBadge } from "../components/StatusBadge";
+import { Badge, StatusBadge, PriorityBadge } from "../components/StatusBadge";
 import { PageSkeleton, ErrorBanner } from "../components/LoadingSpinner";
+import { EmptyState } from "../components/EmptyState";
+import { IconArrowLeft } from "../components/icons";
+import { formatCurrency } from "../lib/format";
 import { useAuthStore } from "../store/authStore";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -50,35 +53,32 @@ export function LeadDetailPage() {
   const allowedTransitions = STATUS_TRANSITIONS[lead.status] ?? [];
 
   return (
-    <div className="space-y-8">
-      <button onClick={() => navigate(-1)} className="text-sm font-medium" style={{ color: "var(--accent)" }}>
-        &larr; Back
-      </button>
-
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="eyebrow mb-2">{lead.lead_number}</p>
-          <h1 className="page-title">{lead.company}</h1>
-          <div className="mt-3 flex gap-2">
-            <StatusBadge status={lead.status} />
-            <PriorityBadge priority={lead.priority} />
-            {lead.is_duplicate && (
-              <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium" style={{ background: "#fefce8", color: "#a16207" }}>
-                Possible duplicate
-              </span>
-            )}
-          </div>
-        </div>
-        <Link to="/leads" className="text-sm" style={{ color: "var(--ink-tertiary)" }}>
-          View all leads
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <button type="button" onClick={() => navigate(-1)} className="btn-ghost -ml-2">
+          <IconArrowLeft width={14} height={14} />
+          Back
+        </button>
+        <Link to="/leads" className="btn-ghost">
+          All leads
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <div className="card p-6">
-            <p className="card-title mb-5">Lead Details</p>
-            <dl className="grid grid-cols-2 gap-5 text-sm">
+      <header>
+        <p className="eyebrow mb-1.5 font-mono">{lead.lead_number}</p>
+        <h1 className="page-title">{lead.company}</h1>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <StatusBadge status={lead.status} />
+          <PriorityBadge priority={lead.priority} />
+          {lead.is_duplicate && <Badge tone="warning" label="Possible duplicate" />}
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          <section className="card p-5">
+            <h2 className="card-title mb-4">Lead details</h2>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-4 text-sm sm:grid-cols-3">
               <Field label="Contact" value={lead.contact_name} />
               <Field label="Phone" value={lead.phone} />
               <Field label="Email" value={lead.email || "—"} />
@@ -86,96 +86,109 @@ export function LeadDetailPage() {
               <Field label="Quantity" value={String(lead.quantity)} />
               <Field label="Representative" value={lead.representative_name || "Unassigned"} />
               <Field label="Industry" value={lead.industry} />
-              <Field label="Customer Type" value={lead.customer_type} />
-              <Field label="Product Category" value={lead.product_category} />
-              <Field label="Record State" value={lead.record_state} />
+              <Field label="Customer type" value={lead.customer_type} />
+              <Field label="Product category" value={lead.product_category} />
+              <Field label="Record state" value={lead.record_state} />
             </dl>
-          </div>
+          </section>
 
-          <div className="card p-6">
-            <p className="card-title mb-5">Activity Timeline</p>
+          <section className="card p-5">
+            <h2 className="card-title mb-4">Activity timeline</h2>
             {activityQuery.isLoading && (
               <div className="space-y-3">
                 <div className="skeleton h-10 w-full" />
                 <div className="skeleton h-10 w-full" />
               </div>
             )}
-            <ul className="space-y-4">
-              {activityQuery.data?.activities.map((a) => (
-                <li key={a.id} className="pl-4 text-sm" style={{ borderLeft: "2px solid var(--border)" }}>
-                  <p className="font-medium" style={{ color: "var(--ink)" }}>{a.type}</p>
-                  <p style={{ color: "var(--ink-secondary)" }}>{a.description}</p>
-                  <p className="mt-0.5 text-xs" style={{ color: "var(--ink-tertiary)" }}>
-                    {a.actor} &middot; {new Date(a.created_at).toLocaleString()}
-                  </p>
-                </li>
-              ))}
-              {activityQuery.data?.activities.length === 0 && (
-                <p className="text-sm" style={{ color: "var(--ink-tertiary)" }}>No activity yet.</p>
-              )}
-            </ul>
-          </div>
+            {activityQuery.data && activityQuery.data.activities.length > 0 && (
+              <ol className="relative space-y-5 border-l pl-5" style={{ borderColor: "var(--border)" }}>
+                {activityQuery.data.activities.map((a) => (
+                  <li key={a.id} className="relative text-sm">
+                    <span
+                      aria-hidden="true"
+                      className="absolute -left-[25px] top-1.5 h-2 w-2 rounded-full border"
+                      style={{ background: "var(--bg)", borderColor: "var(--ink-tertiary)" }}
+                    />
+                    <p className="font-medium" style={{ color: "var(--ink)" }}>{a.type}</p>
+                    <p style={{ color: "var(--ink-secondary)" }}>{a.description}</p>
+                    <p className="mt-0.5 text-xs" style={{ color: "var(--ink-tertiary)" }}>
+                      {a.actor} · {new Date(a.created_at).toLocaleString()}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {activityQuery.data?.activities.length === 0 && (
+              <EmptyState title="No activity yet" description="Status changes, notes and assignments will be logged here." />
+            )}
+          </section>
         </div>
 
-        <div className="space-y-6">
-          <div className="card p-6">
-            <p className="card-title mb-5">AI Scoring</p>
+        <div className="space-y-4">
+          <section className="card p-5">
+            <h2 className="card-title mb-4">AI scoring</h2>
             <dl className="space-y-3.5 text-sm">
-              <Field label="Lead Score" value={`${lead.lead_score.toFixed(0)} / 100`} />
-              <Field label="Buying Probability" value={`${lead.buying_probability.toFixed(0)}%`} />
-              <Field label="Risk Score" value={`${lead.risk_score.toFixed(0)} / 100`} />
-              <Field label="Deal Size Estimate" value={`$${lead.deal_size_estimate.toLocaleString()}`} />
+              <Field label="Lead score" value={`${lead.lead_score.toFixed(0)} / 100`} />
+              <Field label="Buying probability" value={`${lead.buying_probability.toFixed(0)}%`} />
+              <Field label="Risk score" value={`${lead.risk_score.toFixed(0)} / 100`} />
+              <Field label="Deal size estimate" value={formatCurrency(lead.deal_size_estimate)} />
             </dl>
-          </div>
+          </section>
 
           {nbaQuery.data && (
-            <div className="card-ai p-6">
-              <div className="mb-3 flex items-center gap-1.5">
-                <span
-                  className="block h-1.5 w-1.5 rounded-full"
-                  style={{ background: "var(--ai-bright)" }}
-                />
-                <p className="eyebrow" style={{ color: "var(--ai)", letterSpacing: "0.08em" }}>
-                  Next Best Action · Claude AI
+            <section className="card-ai p-5">
+              <div className="mb-2.5 flex items-center gap-1.5">
+                <span className="block h-1.5 w-1.5 rounded-full" style={{ background: "var(--ai-bright)" }} />
+                <p className="eyebrow" style={{ color: "var(--ai)" }}>
+                  Next best action · Claude AI
                 </p>
               </div>
-              <p
-                className="text-[15px] font-semibold leading-snug"
-                style={{ fontFamily: "Space Grotesk, sans-serif", color: "var(--ink)" }}
-              >
+              <p className="text-[15px] font-semibold leading-snug" style={{ color: "var(--ink)", letterSpacing: "-0.01em" }}>
                 {nbaQuery.data.action}
               </p>
               <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--ink-secondary)" }}>
                 {nbaQuery.data.reasoning}
               </p>
               <span
-                className="mt-3 inline-block rounded-md px-2.5 py-1 text-xs font-semibold"
-                style={{ background: "var(--ai-soft)", color: "var(--ai-ink)", border: "1px solid var(--ai-border)" }}
+                className="mt-3 inline-block rounded-md px-2 py-0.5 text-xs font-medium"
+                style={{ color: "var(--ai-ink)", border: "1px solid var(--ai-border)" }}
               >
                 Urgency: {nbaQuery.data.urgency}
               </span>
-            </div>
+            </section>
           )}
 
           {canEdit && allowedTransitions.length > 0 && (
-            <div className="card p-6">
-              <p className="card-title mb-4">Update Status</p>
+            <section className="card p-5">
+              <h2 className="card-title mb-3">Update status</h2>
+              <label htmlFor="status-remarks" className="sr-only">Remarks</label>
               <textarea
+                id="status-remarks"
                 placeholder="Remarks (optional)"
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
-                className="input-field mb-3 w-full px-3.5 py-2.5"
+                className="input-field mb-3 w-full resize-none"
                 rows={2}
               />
               <div className="flex flex-wrap gap-2">
                 {allowedTransitions.map((s) => (
-                  <button key={s} onClick={() => statusMutation.mutate(s)} disabled={statusMutation.isPending} className="btn-secondary px-3.5 py-1.5 text-xs">
-                    → {s}
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => statusMutation.mutate(s)}
+                    disabled={statusMutation.isPending}
+                    className="btn-secondary"
+                  >
+                    {s}
                   </button>
                 ))}
               </div>
-              {statusMutation.isError && <p className="mt-2 text-xs text-red-600">Failed to update status.</p>}
-            </div>
+              {statusMutation.isError && (
+                <p className="mt-2 text-xs" role="alert" style={{ color: "var(--danger)" }}>
+                  Couldn't update the status. Try again.
+                </p>
+              )}
+            </section>
           )}
         </div>
       </div>

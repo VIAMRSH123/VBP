@@ -1,21 +1,25 @@
 import { useState, type FormEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listAuditLog, listConfiguration, upsertConfiguration, listUsers, createUser } from "../api/admin";
+import { listAuditLog, listConfiguration, upsertConfiguration, listUsers, createUser, type AdminUser } from "../api/admin";
 import { TableSkeleton, ErrorBanner } from "../components/LoadingSpinner";
+import { DataTable, type Column } from "../components/DataTable";
+import { EmptyState } from "../components/EmptyState";
+import { Badge } from "../components/StatusBadge";
+import { PageHeader } from "../components/PageHeader";
 
 const ROLES = ["administrator", "sales_manager", "sales_representative", "executive", "read_only_auditor"];
 
+const USER_COLUMNS: Column<AdminUser>[] = [
+  { key: "name", header: "Name", sortValue: (u) => u.name, cell: (u) => <span style={{ color: "var(--ink)" }}>{u.name}</span> },
+  { key: "email", header: "Email", sortValue: (u) => u.email, cell: (u) => u.email },
+  { key: "role", header: "Role", sortValue: (u) => u.role, cell: (u) => <span className="capitalize">{u.role.replace(/_/g, " ")}</span> },
+  { key: "active", header: "Status", sortValue: (u) => (u.active ? 1 : 0), cell: (u) => <Badge tone={u.active ? "success" : "neutral"} label={u.active ? "Active" : "Inactive"} /> },
+];
+
 export function AdministrationPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="eyebrow mb-2">Administration</p>
-        <h1 className="page-title">Administration</h1>
-        <p className="mt-2 text-[15px]" style={{ color: "var(--ink-secondary)" }}>
-          Configuration, users, and audit trail
-        </p>
-      </div>
-
+    <div className="space-y-6">
+      <PageHeader eyebrow="Administration" title="Administration" description="Configuration, users, and audit trail" />
       <ConfigurationSection />
       <UserManagementSection />
       <AuditLogSection />
@@ -35,29 +39,34 @@ function ConfigurationSection() {
   });
 
   return (
-    <div className="card p-6">
-      <p className="card-title mb-1">Configuration</p>
-      <p className="mb-5 text-xs" style={{ color: "var(--ink-tertiary)" }}>Reminders, assignment rules</p>
+    <section className="card p-5">
+      <h2 className="card-title">Configuration</h2>
+      <p className="mb-4 mt-1 text-xs" style={{ color: "var(--ink-tertiary)" }}>Reminders, assignment rules</p>
       {isLoading && <TableSkeleton rows={3} />}
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         {data?.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 text-sm">
-            <span className="w-56 shrink-0 font-mono text-xs" style={{ color: "var(--ink-tertiary)" }}>{c.key}</span>
+          <div key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+            <label htmlFor={`config-${c.key}`} className="w-full shrink-0 font-mono text-xs sm:w-56" style={{ color: "var(--ink-tertiary)" }}>
+              {c.key}
+            </label>
             <input
-              className="input-field flex-1 px-3 py-1.5"
+              id={`config-${c.key}`}
+              className="input-field min-w-0 flex-1"
               defaultValue={c.value}
               onChange={(e) => setEdits((prev) => ({ ...prev, [c.key]: e.target.value }))}
             />
             <button
+              type="button"
               onClick={() => mutation.mutate({ key: c.key, value: edits[c.key] ?? c.value, category: c.category })}
-              className="btn-secondary px-3.5 py-1.5 text-xs"
+              disabled={mutation.isPending}
+              className="btn-secondary"
             >
               Save
             </button>
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -83,45 +92,38 @@ function UserManagementSection() {
   }
 
   return (
-    <div className="card p-6">
-      <p className="card-title mb-5">User Management</p>
-
-      <form onSubmit={handleSubmit} className="mb-6 flex flex-wrap gap-2 text-sm">
-        <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field px-3 py-1.5" />
-        <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field px-3 py-1.5" />
-        <input required type="password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-field px-3 py-1.5" />
-        <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="input-field px-3 py-1.5">
-          {ROLES.map((r) => (
-            <option key={r} value={r}>{r.replace(/_/g, " ")}</option>
-          ))}
-        </select>
-        <button type="submit" disabled={mutation.isPending} className="btn-primary px-4 py-1.5 text-xs">
-          Add User
-        </button>
-      </form>
-      {error && <p className="mb-3 text-xs text-red-600">{error}</p>}
+    <section className="card overflow-hidden">
+      <div className="p-5 pb-4">
+        <h2 className="card-title mb-4">User management</h2>
+        <form onSubmit={handleSubmit} className="flex flex-wrap gap-2">
+          <input required aria-label="Name" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" />
+          <input required type="email" aria-label="Email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field" />
+          <input required type="password" aria-label="Password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-field" autoComplete="new-password" />
+          <select aria-label="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="input-field capitalize">
+            {ROLES.map((r) => (
+              <option key={r} value={r}>{r.replace(/_/g, " ")}</option>
+            ))}
+          </select>
+          <button type="submit" disabled={mutation.isPending} className="btn-primary">
+            Add user
+          </button>
+        </form>
+        {error && <p className="mt-3 text-xs" role="alert" style={{ color: "var(--danger)" }}>{error}</p>}
+      </div>
 
       {isLoading && <TableSkeleton rows={3} />}
-      <table className="min-w-full text-sm">
-        <thead>
-          <tr style={{ borderBottom: "1px solid var(--border)" }}>
-            {["Name", "Email", "Role", "Active"].map((h) => (
-              <th key={h} className="table-head-cell px-3 py-3 text-left">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data?.map((u) => (
-            <tr key={u.id} className="table-row">
-              <td className="px-3 py-3.5" style={{ color: "var(--ink)" }}>{u.name}</td>
-              <td className="px-3 py-3.5" style={{ color: "var(--ink-secondary)" }}>{u.email}</td>
-              <td className="px-3 py-3.5" style={{ color: "var(--ink-secondary)" }}>{u.role.replace(/_/g, " ")}</td>
-              <td className="px-3 py-3.5" style={{ color: "var(--ink-secondary)" }}>{u.active ? "Yes" : "No"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+      {data && (
+        <DataTable
+          bare
+          caption="Users"
+          columns={USER_COLUMNS}
+          rows={data}
+          rowKey={(u) => u.id}
+          emptyTitle="No users yet"
+          emptyDescription="Add the first user with the form above."
+        />
+      )}
+    </section>
   );
 }
 
@@ -129,20 +131,21 @@ function AuditLogSection() {
   const { data, isLoading, isError } = useQuery({ queryKey: ["audit-log"], queryFn: () => listAuditLog(100) });
 
   return (
-    <div className="card p-6">
-      <p className="card-title mb-5">Audit Log</p>
+    <section className="card p-5">
+      <h2 className="card-title mb-4">Audit log</h2>
       {isLoading && <TableSkeleton rows={4} />}
       {isError && <ErrorBanner message="Failed to load audit log." />}
-      <div className="max-h-96 space-y-0 overflow-y-auto text-xs">
+      {data && data.length === 0 && <EmptyState title="No audit entries yet" description="Admin and pipeline actions are recorded here." />}
+      <ul className="max-h-96 overflow-y-auto text-xs">
         {data?.map((entry) => (
-          <div key={entry.id} className="flex gap-3 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
+          <li key={entry.id} className="flex flex-wrap gap-x-3 gap-y-0.5 border-b py-2.5 last:border-b-0" style={{ borderColor: "var(--border)" }}>
             <span className="w-40 shrink-0" style={{ color: "var(--ink-tertiary)" }}>{new Date(entry.created_at).toLocaleString()}</span>
             <span className="w-40 shrink-0 font-medium" style={{ color: "var(--ink-secondary)" }}>{entry.actor}</span>
-            <span className="w-56 shrink-0 font-mono" style={{ color: "var(--accent)" }}>{entry.action}</span>
+            <span className="w-56 shrink-0 font-mono" style={{ color: "var(--ink)" }}>{entry.action}</span>
             <span style={{ color: "var(--ink-secondary)" }}>{entry.details}</span>
-          </div>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }

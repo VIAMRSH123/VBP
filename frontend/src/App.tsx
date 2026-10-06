@@ -11,6 +11,7 @@ import { MarketingAnalyticsPage } from "./pages/MarketingAnalyticsPage";
 import { NotificationCenterPage } from "./pages/NotificationCenterPage";
 import { OperationsDashboardPage } from "./pages/OperationsDashboardPage";
 import { AdministrationPage } from "./pages/AdministrationPage";
+import { WarehousePage } from "./pages/WarehousePage";
 
 function App() {
   return (
@@ -41,6 +42,14 @@ function App() {
           >
             <Route path="/marketing" element={<MarketingAnalyticsPage />} />
             <Route path="/operations" element={<OperationsDashboardPage />} />
+          </Route>
+
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["administrator", "sales_manager", "executive", "read_only_auditor"]} />
+            }
+          >
+            <Route path="/warehouse" element={<WarehousePage />} />
           </Route>
 
           <Route path="/notifications" element={<NotificationCenterPage />} />

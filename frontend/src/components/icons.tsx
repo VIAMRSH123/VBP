@@ -135,3 +135,105 @@ export function IconInfo(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function IconWarehouse(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 9.5 12 4l9 5.5V20H3z" />
+      <path d="M7 20v-6h10v6" />
+      <path d="M7 16.5h10" />
+    </svg>
+  );
+}
+
+export function IconSearch(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-3.8-3.8" />
+    </svg>
+  );
+}
+
+export function IconChevronDown(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+export function IconChevronLeft(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m15 6-6 6 6 6" />
+    </svg>
+  );
+}
+
+export function IconChevronRight(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+export function IconArrowUp(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" />
+    </svg>
+  );
+}
+
+export function IconArrowDown(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 5v14M5.5 12.5 12 19l6.5-6.5" />
+    </svg>
+  );
+}
+
+export function IconArrowLeft(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M19 12H5M11.5 5.5 5 12l6.5 6.5" />
+    </svg>
+  );
+}
+
+export function IconLogOut(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3" />
+      <path d="m16 8 4 4-4 4M20 12H9" />
+    </svg>
+  );
+}
+
+export function IconInbox(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 13.5 6.5 5.5a1 1 0 0 1 1-.5h9a1 1 0 0 1 1 .5l2.5 8" />
+      <path d="M4 13.5V18a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4.5h-5a3 3 0 0 1-6 0z" />
+    </svg>
+  );
+}
+
+export function IconAlert(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 4 3 19.5h18z" />
+      <path d="M12 10v4.5M12 17.4v.1" />
+    </svg>
+  );
+}
+
+export function IconCornerDownLeft(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M20 5v6a3 3 0 0 1-3 3H5M9.5 9.5 5 14l4.5 4.5" />
+    </svg>
+  );
+}

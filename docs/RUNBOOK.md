@@ -25,8 +25,12 @@ Needed so real WhatsApp messages (via Wasender) can reach your local backend.
 
 ```bash
 cd /Users/viamrsh/Desktop/VBP/backend
-cloudflared tunnel --url http://localhost:8000 > cloudflared.log 2>&1 &
+cloudflared tunnel --protocol http2 --url http://localhost:8000 > cloudflared.log 2>&1 &
 ```
+
+`--protocol http2` matters: on some networks QUIC (UDP) is blocked, the tunnel never registers, and
+the URL returns `530`. If the URL gives 530 after ~30s, check `cloudflared.log` for
+`Failed to dial a quic connection` and restart with the flag above.
 
 Then get the new URL:
 
