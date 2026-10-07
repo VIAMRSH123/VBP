@@ -11,6 +11,7 @@ from app.services.ai.next_best_action import recommend_next_action
 from app.services.audit_service import record_audit
 from app.integrations import quip_client
 from datetime import datetime
+import json
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
 
@@ -26,6 +27,7 @@ def list_leads(
     status: str | None = None,
     representative_id: str | None = None,
     search: str | None = None,
+    source: str | None = None,
     limit: int = Query(50, le=200),
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -40,6 +42,8 @@ def list_leads(
         query = query.filter(Lead.status == status)
     if representative_id:
         query = query.filter(Lead.representative_id == representative_id)
+    if source:
+        query = query.filter(Lead.source == source)
     if search:
         like = f"%{search}%"
         query = query.filter((Lead.company.like(like)) | (Lead.contact_name.like(like)) | (Lead.lead_number.like(like)))
@@ -56,6 +60,27 @@ def get_lead(lead_id: str, db: Session = Depends(get_db), current: CurrentUser =
         raise HTTPException(status_code=404, detail="Lead not found")
     _ensure_owned_lead(lead, current)
     return lead
+
+
+@router.get("/{lead_id}/sap")
+def get_lead_sap_references(lead_id: str, db: Session = Depends(get_db), current: CurrentUser = Depends(get_current_user)):
+    """SAP document numbers, stage and sync time for a lead that came from SAP (empty for others)."""
+    lead = db.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    _ensure_owned_lead(lead, current)
+    try:
+        refs = json.loads(lead.sap_refs) if lead.sap_refs else {}
+    except ValueError:
+        refs = {}
+    return {
+        "linked": bool(lead.external_id),
+        "external_system": lead.external_system,
+        "external_id": lead.external_id,
+        "card_code": lead.sap_card_code,
+        "synced_at": lead.sap_synced_at,
+        "refs": refs,
+    }
 
 
 @router.get("/{lead_id}/activity")

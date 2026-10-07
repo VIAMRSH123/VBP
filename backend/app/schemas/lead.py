@@ -25,6 +25,9 @@ class LeadOut(BaseModel):
     risk_score: float
     priority: str = ""
     remarks: str = ""
+    source: str = ""
+    territory: str = ""
+    external_system: str = ""
     is_duplicate: bool
     created_at: datetime
     updated_at: datetime

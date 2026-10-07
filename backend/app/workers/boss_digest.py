@@ -16,6 +16,7 @@ from app.services.notification_service import send_notification
 logger = logging.getLogger("boss_digest")
 
 TERMINAL_STATUSES = ("Won", "Lost", "Archived")
+MAX_DIGEST_LINES = 15  # a SAP backfill can produce hundreds of stale leads; WhatsApp messages can't carry them
 
 
 def _boss_phone(db: Session) -> str:
@@ -27,13 +28,20 @@ def _format_lead_line(lead: Lead) -> str:
     return f"{lead.lead_number} — {lead.company} ({lead.product})"
 
 
+def _format_lines(leads: list[Lead]) -> str:
+    lines = [f"  • {_format_lead_line(l)}" for l in leads[:MAX_DIGEST_LINES]]
+    if len(leads) > MAX_DIGEST_LINES:
+        lines.append(f"  … and {len(leads) - MAX_DIGEST_LINES} more (see the dashboard)")
+    return "\n".join(lines)
+
+
 def _build_digest_text(unassigned: list[Lead], stale: list[Lead]) -> str:
     sections = []
     if unassigned:
-        lines = "\n".join(f"  • {_format_lead_line(l)}" for l in unassigned)
+        lines = _format_lines(unassigned)
         sections.append(f"🔴 Unassigned ({len(unassigned)}):\n{lines}")
     if stale:
-        lines = "\n".join(f"  • {_format_lead_line(l)}" for l in stale)
+        lines = _format_lines(stale)
         sections.append(f"🟡 No rep response 3+ days ({len(stale)}):\n{lines}")
     return "\n\n".join(sections)
 

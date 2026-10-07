@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Float, Text
+from sqlalchemy import Index, String, Integer, Float, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -17,6 +17,23 @@ class Customer(Base, TimestampMixin):
     customer_type: Mapped[str] = mapped_column(String(60), default="")  # New / Existing
     territory: Mapped[str] = mapped_column(String(120), default="")
 
+    # SAP Business One link (CardCode). Empty for customers that did not come from SAP.
+    external_system: Mapped[str] = mapped_column(String(30), default="", server_default="")
+    external_id: Mapped[str] = mapped_column(String(80), default="", server_default="")
+    card_type: Mapped[str] = mapped_column(String(20), default="", server_default="")
+    order_count: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    last_order_date: Mapped[str] = mapped_column(String(20), default="", server_default="")
+
+    __table_args__ = (
+        Index(
+            "uq_customers_external",
+            "external_system",
+            "external_id",
+            unique=True,
+            sqlite_where=text("external_id != ''"),
+        ),
+    )
+
 
 class Product(Base, TimestampMixin):
     __tablename__ = "products"
@@ -24,6 +41,21 @@ class Product(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     name: Mapped[str] = mapped_column(String(200), unique=True, index=True)
     category: Mapped[str] = mapped_column(String(120), default="")
+
+    # SAP Business One link (ItemCode / item group).
+    external_system: Mapped[str] = mapped_column(String(30), default="", server_default="")
+    item_code: Mapped[str] = mapped_column(String(60), default="", server_default="")
+    item_group: Mapped[str] = mapped_column(String(120), default="", server_default="")
+
+    __table_args__ = (
+        Index(
+            "uq_products_external",
+            "external_system",
+            "item_code",
+            unique=True,
+            sqlite_where=text("item_code != ''"),
+        ),
+    )
 
 
 class Lead(Base, TimestampMixin):
@@ -86,3 +118,22 @@ class Lead(Base, TimestampMixin):
 
     extraction_confidence: Mapped[float] = mapped_column(Float, default=0.0)
     missing_fields: Mapped[str] = mapped_column(Text, default="")  # comma separated
+
+    # External system link. Today only SAP Business One: external_id is "opp:<SequentialNo>" or
+    # "bp:<CardCode>"; sap_refs is a JSON blob of related SAP document numbers and the stage.
+    external_system: Mapped[str] = mapped_column(String(30), default="", server_default="")
+    external_id: Mapped[str] = mapped_column(String(80), default="", server_default="")
+    sap_card_code: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    sap_refs: Mapped[str] = mapped_column(Text, default="", server_default="")
+    sap_hash: Mapped[str] = mapped_column(String(64), default="", server_default="")
+    sap_synced_at: Mapped[str] = mapped_column(String(40), default="", server_default="")
+
+    __table_args__ = (
+        Index(
+            "uq_leads_external",
+            "external_system",
+            "external_id",
+            unique=True,
+            sqlite_where=text("external_id != ''"),
+        ),
+    )

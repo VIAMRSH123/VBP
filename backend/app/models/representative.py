@@ -12,6 +12,8 @@ class Manager(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(200))
     phone: Mapped[str] = mapped_column(String(40), default="")
     email: Mapped[str] = mapped_column(String(200), default="")
+    external_system: Mapped[str] = mapped_column(String(30), default="", server_default="")
+    external_id: Mapped[str] = mapped_column(String(80), default="", server_default="")
 
 
 class Representative(Base, TimestampMixin):
@@ -30,6 +32,12 @@ class Representative(Base, TimestampMixin):
     phone: Mapped[str] = mapped_column(String(40), default="")
     workload: Mapped[int] = mapped_column(Integer, default=0)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # SAP Business One link (SalesEmployeeCode). profile_source says who owns territory/category/
+    # language: "csv" (the uploaded roster) or "sap_derived" (inferred from SAP activity).
+    external_system: Mapped[str] = mapped_column(String(30), default="", server_default="")
+    external_id: Mapped[str] = mapped_column(String(80), default="", server_default="")
+    profile_source: Mapped[str] = mapped_column(String(20), default="csv", server_default="csv")
 
 
 class CsvRepMapping(Base, TimestampMixin):

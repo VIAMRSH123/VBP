@@ -48,7 +48,7 @@ function EmptyState() {
 export function WarehouseDetails({ warehouse }: { warehouse: Warehouse | null }) {
   if (!warehouse) return <EmptyState />;
 
-  const nearCapacity = warehouse.utilization >= HIGH_UTILIZATION;
+  const nearCapacity = warehouse.utilization !== null && warehouse.utilization >= HIGH_UTILIZATION;
 
   return (
     <article key={warehouse.id} className="card wh-panel-in overflow-hidden" aria-live="polite">
@@ -65,20 +65,29 @@ export function WarehouseDetails({ warehouse }: { warehouse: Warehouse | null })
       </header>
 
       <Section title="Capacity">
-        <div className="flex items-end justify-between">
-          <p className="stat-value">{warehouse.utilization}%</p>
-          <p className="pb-1 text-[11.5px] tabular-nums" style={{ color: "var(--ink-tertiary)" }}>
-            {formatNumber(warehouse.totalStock)} / {formatNumber(warehouse.capacity)} units
-          </p>
-        </div>
-        <div className="wh-bar mt-3" role="progressbar" aria-valuenow={warehouse.utilization} aria-valuemin={0} aria-valuemax={100} aria-label="Capacity utilization">
-          <div
-            className="wh-bar__fill"
-            style={{ width: `${warehouse.utilization}%`, background: nearCapacity ? "var(--ai-bright)" : "var(--success)" }}
-          />
-        </div>
-        {nearCapacity && (
-          <p className="mt-2 text-[11.5px]" style={{ color: "var(--ai)" }}>Approaching capacity</p>
+        {warehouse.utilization === null || warehouse.capacity === null ? (
+          <>
+            <p className="stat-value">n/a</p>
+            <p className="mt-1.5 text-[12px]" style={{ color: "var(--ink-tertiary)" }}>
+              No capacity is set for this warehouse in SAP, so utilization can't be calculated.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex items-end justify-between">
+              <p className="stat-value">{warehouse.utilization}%</p>
+              <p className="pb-1 text-[11.5px] tabular-nums" style={{ color: "var(--ink-tertiary)" }}>
+                {formatNumber(warehouse.totalStock)} / {formatNumber(warehouse.capacity)} units
+              </p>
+            </div>
+            <div className="wh-bar mt-3" role="progressbar" aria-valuenow={Math.min(warehouse.utilization, 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Capacity utilization">
+              <div
+                className="wh-bar__fill"
+                style={{ width: `${Math.min(warehouse.utilization, 100)}%`, background: nearCapacity ? "var(--ai-bright)" : "var(--success)" }}
+              />
+            </div>
+            {nearCapacity && <p className="mt-2 text-[11.5px]" style={{ color: "var(--ai)" }}>Approaching capacity</p>}
+          </>
         )}
       </Section>
 
@@ -91,7 +100,7 @@ export function WarehouseDetails({ warehouse }: { warehouse: Warehouse | null })
           <FlowRow label="Inbound" value={warehouse.inbound} />
           <FlowRow label="Outbound" value={warehouse.outbound} />
           <FlowRow label="Reserved" value={warehouse.reserved} />
-          <FlowRow label="Damaged" value={warehouse.damaged} tone={warehouse.damaged > 200 ? "var(--danger)" : undefined} />
+          <FlowRow label="On order" value={warehouse.onOrder} />
           <FlowRow label="Available" value={warehouse.available} tone="var(--success)" />
         </div>
       </Section>

@@ -1,4 +1,7 @@
 import { useState, type KeyboardEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getSapStatus } from "../api/sap";
+import { DataSourceBadge } from "../components/DataSourceBadge";
 import { useAuthStore } from "../store/authStore";
 import { RepFilterSelect } from "../components/RepFilterSelect";
 import { OverviewTab } from "./dashboard-tabs/OverviewTab";
@@ -24,6 +27,7 @@ export function TFSDashboardPage() {
   const [representativeId, setRepresentativeId] = useState("");
   const user = useAuthStore((s) => s.user);
   const isRep = user?.role === "sales_representative";
+  const sap = useQuery({ queryKey: ["sap-status"], queryFn: getSapStatus, refetchInterval: 60_000 }).data;
 
   // Sales reps are always scoped to themselves — the backend enforces this regardless.
   const effectiveRepId = isRep ? user.representative_id ?? "" : representativeId;
@@ -48,6 +52,11 @@ export function TFSDashboardPage() {
         <div>
           <p className="eyebrow mb-1.5">Dashboard</p>
           <h1 className="page-title">Pipeline overview</h1>
+          {sap && sap.mode !== "off" && (
+            <div className="mt-2">
+              <DataSourceBadge mode={sap.mode} lastSyncedAt={sap.last_success_at} />
+            </div>
+          )}
         </div>
         <RepFilterSelect value={representativeId} onChange={setRepresentativeId} />
       </div>

@@ -12,6 +12,7 @@ TEMPLATES = {
     "Won": "Lead {lead_number} ({company}) marked as WON. Great work!",
     "Lost": "Lead {lead_number} ({company}) marked as LOST. Reason: {detail}.",
     "DailySummary": "Daily summary: {detail}",
+    "SapSyncSummary": "SAP sync: {detail}",
     "WeeklySummary": "Weekly summary: {detail}",
 }
 

@@ -6,6 +6,7 @@ import { DataTable, type Column } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { Badge } from "../components/StatusBadge";
 import { PageHeader } from "../components/PageHeader";
+import { SapIntegrationSection } from "./admin/SapIntegrationSection";
 
 const ROLES = ["administrator", "sales_manager", "sales_representative", "executive", "read_only_auditor"];
 
@@ -20,6 +21,7 @@ export function AdministrationPage() {
   return (
     <div className="space-y-6">
       <PageHeader eyebrow="Administration" title="Administration" description="Configuration, users, and audit trail" />
+      <SapIntegrationSection />
       <ConfigurationSection />
       <UserManagementSection />
       <AuditLogSection />

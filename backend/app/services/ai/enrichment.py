@@ -31,15 +31,20 @@ def _classify_product(product: str) -> tuple[str, str, float]:
     return DEFAULT_INDUSTRY, DEFAULT_CATEGORY, DEFAULT_UNIT_VALUE
 
 
-def _heuristic_enrich(fields: dict, is_existing_customer: bool) -> dict:
+def _heuristic_enrich(fields: dict, is_existing_customer: bool, overrides: dict | None = None) -> dict:
+    overrides = overrides or {}
     industry, category, unit_value = _classify_product(fields.get("product", ""))
     quantity = fields.get("quantity") or 1
-    deal_size = round(unit_value * quantity, 2)
+    deal_size = overrides.get("deal_size_estimate") or round(unit_value * quantity, 2)
+    industry = overrides.get("industry") or industry
+    category = overrides.get("product_category") or category
 
     completeness = 1.0 - (len(fields.get("missing_fields") or []) * 0.15)
     completeness = max(0.2, min(1.0, completeness))
 
     buying_probability = round(min(95, 40 + completeness * 40 + (15 if is_existing_customer else 0)), 1)
+    if overrides.get("buying_probability") is not None:
+        buying_probability = float(overrides["buying_probability"])
     lead_score = round(min(100, buying_probability * 0.6 + min(deal_size / 100, 30) + (10 if is_existing_customer else 0)), 1)
     risk_score = round(max(5, 100 - lead_score), 1)
 
@@ -68,8 +73,19 @@ def _heuristic_enrich(fields: dict, is_existing_customer: bool) -> dict:
     }
 
 
-def enrich_lead(db: Session, fields: dict, is_existing_customer: bool = False, lead_id: str = "") -> dict:
-    used_llm = claude_client.is_available()
+def enrich_lead(
+    db: Session,
+    fields: dict,
+    is_existing_customer: bool = False,
+    lead_id: str = "",
+    *,
+    overrides: dict | None = None,
+    allow_llm: bool = True,
+    log: bool = True,
+) -> dict:
+    """`overrides` carries values a system of record already knows (SAP deal value, industry, category,
+    win probability); they replace the keyword heuristics while score, risk and priority are still derived."""
+    used_llm = allow_llm and claude_client.is_available()
     if used_llm:
         try:
             result = claude_client.complete_json(
@@ -78,18 +94,19 @@ def enrich_lead(db: Session, fields: dict, is_existing_customer: bool = False, l
             )
         except Exception:
             used_llm = False
-            result = _heuristic_enrich(fields, is_existing_customer)
+            result = _heuristic_enrich(fields, is_existing_customer, overrides)
     else:
-        result = _heuristic_enrich(fields, is_existing_customer)
+        result = _heuristic_enrich(fields, is_existing_customer, overrides)
 
-    log_decision(
-        db,
-        lead_id=lead_id,
-        skill="enrichment",
-        model_version=settings.anthropic_model if used_llm else "heuristic-fallback",
-        input_summary=str(fields),
-        output=result,
-        confidence=result.get("confidence", 0.0),
-        used_llm=used_llm,
-    )
+    if log:
+        log_decision(
+            db,
+            lead_id=lead_id,
+            skill="enrichment",
+            model_version=settings.anthropic_model if used_llm else "heuristic-fallback",
+            input_summary=str(fields),
+            output=result,
+            confidence=result.get("confidence", 0.0),
+            used_llm=used_llm,
+        )
     return result

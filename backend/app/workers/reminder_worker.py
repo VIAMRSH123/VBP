@@ -34,6 +34,12 @@ def _hours_since(iso_ts: str) -> float:
     return (datetime.now(timezone.utc) - ts).total_seconds() / 3600
 
 
+def stage_for_age(iso_ts: str) -> int:
+    """The reminder stage a lead has already aged into: 0 below 24h, 1 from 24h, 2 from 48h, 3 from 72h."""
+    hours = _hours_since(iso_ts)
+    return max((stage for stage, threshold in STAGE_THRESHOLD_HOURS.items() if hours >= threshold), default=0)
+
+
 def _sales_ops_phone(db: Session) -> str:
     from app.models.config import Configuration
 

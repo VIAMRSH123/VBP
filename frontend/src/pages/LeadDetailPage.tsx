@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getLead, getLeadActivity, updateLeadStatus, getNextBestAction } from "../api/leads";
+import { getLead, getLeadActivity, getLeadSapReferences, updateLeadStatus, getNextBestAction, type LeadSapReferences } from "../api/leads";
 import { Badge, StatusBadge, PriorityBadge } from "../components/StatusBadge";
 import { PageSkeleton, ErrorBanner } from "../components/LoadingSpinner";
 import { EmptyState } from "../components/EmptyState";
 import { IconArrowLeft } from "../components/icons";
 import { formatCurrency } from "../lib/format";
+import { leadSource } from "../lib/leadSource";
 import { useAuthStore } from "../store/authStore";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -32,6 +33,7 @@ export function LeadDetailPage() {
 
   const leadQuery = useQuery({ queryKey: ["lead", id], queryFn: () => getLead(id!), enabled: !!id });
   const activityQuery = useQuery({ queryKey: ["lead-activity", id], queryFn: () => getLeadActivity(id!), enabled: !!id });
+  const sapQuery = useQuery({ queryKey: ["lead-sap", id], queryFn: () => getLeadSapReferences(id!), enabled: !!id });
   const nbaQuery = useQuery({ queryKey: ["lead-nba", id], queryFn: () => getNextBestAction(id!), enabled: !!id });
 
   const statusMutation = useMutation({
@@ -70,6 +72,7 @@ export function LeadDetailPage() {
         <div className="mt-3 flex flex-wrap gap-2">
           <StatusBadge status={lead.status} />
           <PriorityBadge priority={lead.priority} />
+          <Badge tone={leadSource(lead).tone} label={leadSource(lead).label} />
           {lead.is_duplicate && <Badge tone="warning" label="Possible duplicate" />}
         </div>
       </header>
@@ -88,6 +91,7 @@ export function LeadDetailPage() {
               <Field label="Industry" value={lead.industry} />
               <Field label="Customer type" value={lead.customer_type} />
               <Field label="Product category" value={lead.product_category} />
+              <Field label="Territory" value={lead.territory || "—"} />
               <Field label="Record state" value={lead.record_state} />
             </dl>
           </section>
@@ -134,6 +138,8 @@ export function LeadDetailPage() {
               <Field label="Deal size estimate" value={formatCurrency(lead.deal_size_estimate)} />
             </dl>
           </section>
+
+          {sapQuery.data?.linked && <SapReferences data={sapQuery.data} />}
 
           {nbaQuery.data && (
             <section className="card-ai p-5">
@@ -193,6 +199,26 @@ export function LeadDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SapReferences({ data }: { data: LeadSapReferences }) {
+  const { refs } = data;
+  const numbers = (docs?: { doc_entry: number; doc_num?: number }[]) =>
+    docs && docs.length > 0 ? docs.map((d) => `#${d.doc_num ?? d.doc_entry}`).join(", ") : "—";
+  const synced = data.synced_at ? new Date(data.synced_at).toLocaleString() : "—";
+  return (
+    <section className="card p-5">
+      <h2 className="card-title mb-4">SAP references</h2>
+      <dl className="space-y-3.5 text-sm">
+        <Field label="Customer code" value={data.card_code || "—"} />
+        <Field label="Opportunity" value={refs.opportunity_no ? `#${refs.opportunity_no}${refs.opportunity_name ? ` · ${refs.opportunity_name}` : ""}` : "—"} />
+        <Field label="Stage" value={refs.stage ? `${refs.stage}${refs.stage_percent ? ` (${refs.stage_percent.toFixed(0)}%)` : ""}` : "—"} />
+        <Field label="Quotations" value={numbers(refs.quotations)} />
+        <Field label="Sales orders" value={numbers(refs.orders)} />
+        <Field label="Last synced" value={synced} />
+      </dl>
+    </section>
   );
 }
 

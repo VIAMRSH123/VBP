@@ -1,8 +1,10 @@
 import type { CSSProperties, KeyboardEvent } from "react";
 import type { Warehouse } from "./data";
-import { boxFaces, groundQuad, leftWallQuad, polygon, project, rightWallQuad, silhouette } from "./iso";
+import { polygon } from "./iso";
 import type { Box } from "./iso";
+import { useIso } from "./iso-context";
 import { CONTAINER_TONES, type SceneLayout, type YardItem } from "./scene";
+import { formatUtilization } from "./data";
 
 interface WarehouseBuildingProps {
   warehouse: Warehouse;
@@ -25,7 +27,8 @@ const TRAILER_TONE: Tone = { top: "#8d9bb2", left: "#6f7d94", right: "#58667c" }
 const CAB_TONE: Tone = { top: "#3f87b0", left: "#2d6a8e", right: "#245676" };
 
 function BoxShape({ box, z = 0, tone }: { box: Box; z?: number; tone: Tone }) {
-  const faces = boxFaces(box, z);
+  const iso = useIso();
+  const faces = iso.boxFaces(box, z);
   return (
     <g>
       <polygon points={faces.left} fill={tone.left} />
@@ -92,13 +95,14 @@ function YardObjects({ items, box, layer }: { items: YardItem[]; box: Box; layer
 }
 
 function RoofDetail({ box, style }: { box: Box; style: SceneLayout["roof"] }) {
+  const iso = useIso();
   const { x, y, w, d, h } = box;
 
   if (style === "skylights") {
     return (
       <>
         {[0.16, 0.42, 0.68].map((a) => (
-          <polygon key={a} className="wh-roof" points={groundQuad(x + w * a, y + 9, x + w * (a + 0.14), y + d - 9, h)} />
+          <polygon key={a} className="wh-roof" points={iso.groundQuad(x + w * a, y + 9, x + w * (a + 0.14), y + d - 9, h)} />
         ))}
       </>
     );
@@ -115,11 +119,11 @@ function RoofDetail({ box, style }: { box: Box; style: SceneLayout["roof"] }) {
           <polyline
             key={s}
             className="wh-rib"
-            points={polygon([project(x + 6, y + d * s, h), project(x + w - 6, y + d * s, h)])}
+            points={polygon([iso.project(x + 6, y + d * s, h), iso.project(x + w - 6, y + d * s, h)])}
           />
         ))}
         {units.map((unit, i) => {
-          const faces = boxFaces(unit, h);
+          const faces = iso.boxFaces(unit, h);
           return (
             <g key={i}>
               <polygon className="wh-hvac wh-hvac--left" points={faces.left} />
@@ -137,7 +141,7 @@ function RoofDetail({ box, style }: { box: Box; style: SceneLayout["roof"] }) {
     for (let r = 0; r < 2; r += 1) {
       const x0 = x + w * (0.1 + c * 0.29);
       const y0 = y + d * (0.12 + r * 0.44);
-      panels.push(groundQuad(x0, y0, x0 + w * 0.25, y0 + d * 0.38, h));
+      panels.push(iso.groundQuad(x0, y0, x0 + w * 0.25, y0 + d * 0.38, h));
     }
   }
   return (
@@ -150,6 +154,7 @@ function RoofDetail({ box, style }: { box: Box; style: SceneLayout["roof"] }) {
 }
 
 function Walls({ box, docks }: { box: Box; docks: number }) {
+  const iso = useIso();
   const { h } = box;
   const span = 0.8 / docks;
   return (
@@ -159,14 +164,14 @@ function Walls({ box, docks }: { box: Box; docks: number }) {
         const half = span * 0.3;
         return (
           <g key={`dock${k}`}>
-            <polygon className="wh-door" points={leftWallQuad(box, center - half, center + half, 0, h * 0.46)} />
-            <polygon className="wh-lamp" points={leftWallQuad(box, center - half, center + half, h * 0.52, h * 0.57)} />
+            <polygon className="wh-door" points={iso.leftWallQuad(box, center - half, center + half, 0, h * 0.46)} />
+            <polygon className="wh-lamp" points={iso.leftWallQuad(box, center - half, center + half, h * 0.52, h * 0.57)} />
           </g>
         );
       })}
       {Array.from({ length: 6 }, (_, k) => {
         const s0 = 0.08 + k * 0.145;
-        return <polygon key={`win${k}`} className="wh-glass" points={rightWallQuad(box, s0, s0 + 0.1, h * 0.58, h * 0.8)} />;
+        return <polygon key={`win${k}`} className="wh-glass" points={iso.rightWallQuad(box, s0, s0 + 0.1, h * 0.58, h * 0.8)} />;
       })}
     </>
   );
@@ -182,9 +187,10 @@ export function WarehouseBuilding({
   onSelect,
   onHover,
 }: WarehouseBuildingProps) {
+  const iso = useIso();
   const { box } = layout;
-  const faces = boxFaces(box);
-  const slab = groundQuad(box.x - 8, box.y - 8, box.x + box.w + 10, box.y + box.d + 30);
+  const faces = iso.boxFaces(box);
+  const slab = iso.groundQuad(box.x - 8, box.y - 8, box.x + box.w + 10, box.y + box.d + 30);
 
   const state = selected ? "wh--selected" : hovered ? "wh--hover" : "";
   const className = ["wh", state, dimmed ? "wh--dim" : ""].filter(Boolean).join(" ");
@@ -196,8 +202,8 @@ export function WarehouseBuilding({
     }
   }
 
-  const edgeTop = polygon([project(box.x, box.y, box.h), project(box.x + box.w, box.y, box.h), project(box.x + box.w, box.y + box.d, box.h), project(box.x, box.y + box.d, box.h)]);
-  const edgeBase = polygon([project(box.x, box.y + box.d, 0), project(box.x + box.w, box.y + box.d, 0), project(box.x + box.w, box.y, 0)]);
+  const edgeTop = polygon([iso.project(box.x, box.y, box.h), iso.project(box.x + box.w, box.y, box.h), iso.project(box.x + box.w, box.y + box.d, box.h), iso.project(box.x, box.y + box.d, box.h)]);
+  const edgeBase = polygon([iso.project(box.x, box.y + box.d, 0), iso.project(box.x + box.w, box.y + box.d, 0), iso.project(box.x + box.w, box.y, 0)]);
 
   return (
     <g
@@ -206,7 +212,7 @@ export function WarehouseBuilding({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`Warehouse ${warehouse.number}, ${warehouse.name}, ${warehouse.utilization}% utilization`}
+      aria-label={`Warehouse ${warehouse.number}, ${warehouse.name}, ${formatUtilization(warehouse.utilization)} utilization`}
       onClick={(event) => {
         event.stopPropagation();
         onSelect(warehouse.id);
@@ -217,7 +223,7 @@ export function WarehouseBuilding({
       onBlur={() => onHover(null)}
       onKeyDown={handleKeyDown}
     >
-      <polygon className="wh-glow" points={silhouette(box, 12)} filter="url(#wh-blur)" />
+      <polygon className="wh-glow" points={iso.silhouette(box, 12)} filter="url(#wh-blur)" />
       <polygon className="wh-slab" points={slab} />
 
       <g className="wh-yard">
@@ -232,15 +238,15 @@ export function WarehouseBuilding({
         <RoofDetail box={box} style={layout.roof} />
         <polygon className="wh-edge" points={edgeTop} />
         <polyline className="wh-edge" points={edgeBase} />
-        <line className="wh-edge" x1={project(box.x + box.w, box.y + box.d, box.h)[0]} y1={project(box.x + box.w, box.y + box.d, box.h)[1]} x2={project(box.x + box.w, box.y + box.d, 0)[0]} y2={project(box.x + box.w, box.y + box.d, 0)[1]} />
+        <line className="wh-edge" x1={iso.project(box.x + box.w, box.y + box.d, box.h)[0]} y1={iso.project(box.x + box.w, box.y + box.d, box.h)[1]} x2={iso.project(box.x + box.w, box.y + box.d, 0)[0]} y2={iso.project(box.x + box.w, box.y + box.d, 0)[1]} />
       </g>
 
       <g className="wh-yard">
         <YardObjects items={layout.yard} box={box} layer="front" />
       </g>
 
-      <polygon className="wh-ring" points={silhouette(box, 7)} />
-      <polygon className="wh-hit" points={silhouette(box, 6)} />
+      <polygon className="wh-ring" points={iso.silhouette(box, 7)} />
+      <polygon className="wh-hit" points={iso.silhouette(box, 6)} />
       <polygon className="wh-hit" points={slab} />
     </g>
   );

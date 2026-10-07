@@ -5,6 +5,7 @@ export interface LeadFilters {
   status?: string;
   representative_id?: string;
   search?: string;
+  source?: string;
   limit?: number;
   offset?: number;
 }
@@ -36,5 +37,28 @@ export interface NextBestAction {
 
 export async function getNextBestAction(id: string): Promise<NextBestAction> {
   const { data } = await apiClient.get<NextBestAction>(`/api/leads/${id}/next-best-action`);
+  return data;
+}
+
+export interface LeadSapReferences {
+  linked: boolean;
+  external_system: string;
+  external_id: string;
+  card_code: string;
+  synced_at: string;
+  refs: {
+    opportunity_no?: number;
+    opportunity_name?: string;
+    stage?: string;
+    stage_percent?: number;
+    sap_status?: string;
+    currency?: string;
+    quotations?: { doc_entry: number; doc_num?: number }[];
+    orders?: { doc_entry: number; doc_num?: number }[];
+  };
+}
+
+export async function getLeadSapReferences(id: string): Promise<LeadSapReferences> {
+  const { data } = await apiClient.get<LeadSapReferences>(`/api/leads/${id}/sap`);
   return data;
 }

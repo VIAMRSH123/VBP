@@ -100,7 +100,7 @@ export function OverviewTab({ representativeId }: OverviewTabProps) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard title="Sales funnel" subtitle="Leads by pipeline stage">
           {funnel.length === 0 ? (
-            <EmptyState title="No leads yet" description="Leads appear here as soon as they come in from WhatsApp." />
+            <EmptyState title="No leads yet" description="Leads appear here after the next sync from SAP." />
           ) : (
             <BarList items={funnel} />
           )}

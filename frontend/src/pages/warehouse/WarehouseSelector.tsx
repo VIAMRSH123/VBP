@@ -1,4 +1,4 @@
-import type { Warehouse } from "./data";
+import { formatUtilization, type Warehouse } from "./data";
 import { StatusDot } from "./StatusDot";
 
 interface WarehouseSelectorProps {
@@ -39,7 +39,7 @@ export function WarehouseSelector({ warehouses, selectedId, hoveredId, onSelect,
                     {warehouse.name}
                   </span>
                   <span className="mt-0.5 block text-[11.5px] tabular-nums" style={{ color: "var(--ink-secondary)" }}>
-                    {warehouse.utilization}% utilization
+                    {warehouse.utilization === null ? "Capacity not set" : `${formatUtilization(warehouse.utilization)} utilization`}
                   </span>
                   <span className="mt-1.5 flex items-center gap-1.5 text-[11px]" style={{ color: "var(--ink-tertiary)" }}>
                     <StatusDot status={warehouse.status} size={6} />

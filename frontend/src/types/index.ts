@@ -35,6 +35,9 @@ export interface Lead {
   risk_score: number;
   priority: string;
   remarks: string;
+  source: string;
+  territory: string;
+  external_system: string;
   is_duplicate: boolean;
   created_at: string;
   updated_at: string;

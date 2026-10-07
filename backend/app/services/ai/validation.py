@@ -75,3 +75,32 @@ def validate_lead(db: Session, fields: dict, lead_id: str = "") -> dict:
         used_llm=used_llm,
     )
     return result
+
+
+def validate_sap_record(fields: dict) -> dict:
+    """Validation for records that already arrive structured from SAP.
+
+    No LLM call and no AI-decision log row (a backfill would write thousands). Only a missing company makes
+    a record a Draft; other gaps are flagged "Requires Review" so a human can complete them in SAP.
+    """
+    issues: list[str] = []
+    if not fields.get("company"):
+        issues.append("Missing mandatory field: company")
+    for name in ("contact_name", "product"):
+        if not fields.get(name):
+            issues.append(f"Missing field in SAP: {name}")
+    phone, email = fields.get("phone") or "", fields.get("email") or ""
+    if not phone and not email:
+        issues.append("Missing field in SAP: phone or email")
+    if phone and not PHONE_RE.match(phone):
+        issues.append(f"Invalid phone format: {phone}")
+    if email and not EMAIL_RE.match(email):
+        issues.append(f"Invalid email format: {email}")
+
+    if not issues:
+        state = "Valid"
+    elif "Missing mandatory field: company" in issues:
+        state = "Draft"
+    else:
+        state = "Requires Review"
+    return {"record_state": state, "issues": issues, "suggested_corrections": {}}

@@ -1,17 +1,8 @@
-import type { CSSProperties } from "react";
-import { formatNumber, type Warehouse } from "./data";
-import {
-  GROUND_X,
-  GROUND_Y,
-  SCENE_HEIGHT,
-  SCENE_WIDTH,
-  boxFaces,
-  groundQuad,
-  polygon,
-  project,
-  toPercent,
-} from "./iso";
-import { ROADS, SCENE_LAYOUT } from "./scene";
+import { useMemo, type CSSProperties } from "react";
+import { formatNumber, formatUtilization, type Warehouse } from "./data";
+import { polygon, type Iso } from "./iso";
+import { IsoContext } from "./iso-context";
+import { buildScene, type Scene } from "./scene";
 import { WarehouseBuilding } from "./WarehouseBuilding";
 
 interface WarehouseVisualizationProps {
@@ -24,15 +15,16 @@ interface WarehouseVisualizationProps {
 
 const GRID_STEP = 35;
 
-function anchorOf(warehouse: Warehouse) {
-  const { box } = SCENE_LAYOUT[warehouse.id];
-  return toPercent(project(box.x + box.w / 2, box.y + box.d / 2, box.h));
+function anchorOf(scene: Scene, id: string) {
+  const { box } = scene.layouts[id];
+  return scene.iso.toPercent(scene.iso.project(box.x + box.w / 2, box.y + box.d / 2, box.h));
 }
 
-function Ground() {
-  const slab = boxFaces({ x: 0, y: 0, w: GROUND_X, d: GROUND_Y, h: 10 }, -10);
-  const xs = Array.from({ length: Math.floor(GROUND_X / GRID_STEP) + 1 }, (_, i) => i * GRID_STEP);
-  const ys = Array.from({ length: Math.floor(GROUND_Y / GRID_STEP) + 1 }, (_, i) => i * GRID_STEP);
+function Ground({ scene }: { scene: Scene }) {
+  const { iso, roads } = scene;
+  const slab = iso.boxFaces({ x: 0, y: 0, w: iso.groundX, d: iso.groundY, h: 10 }, -10);
+  const xs = Array.from({ length: Math.floor(iso.groundX / GRID_STEP) + 1 }, (_, i) => i * GRID_STEP);
+  const ys = Array.from({ length: Math.floor(iso.groundY / GRID_STEP) + 1 }, (_, i) => i * GRID_STEP);
 
   return (
     <g>
@@ -40,20 +32,18 @@ function Ground() {
       <polygon className="wh-ground-side wh-ground-side--right" points={slab.right} />
       <polygon className="wh-ground" points={slab.top} />
       {xs.map((x) => (
-        <polyline key={`gx${x}`} className="wh-grid" points={polygon([project(x, 0), project(x, GROUND_Y)])} />
+        <polyline key={`gx${x}`} className="wh-grid" points={polygon([iso.project(x, 0), iso.project(x, iso.groundY)])} />
       ))}
       {ys.map((y) => (
-        <polyline key={`gy${y}`} className="wh-grid" points={polygon([project(0, y), project(GROUND_X, y)])} />
+        <polyline key={`gy${y}`} className="wh-grid" points={polygon([iso.project(0, y), iso.project(iso.groundX, y)])} />
       ))}
-      {ROADS.map((road) => {
+      {roads.map((road) => {
         const horizontal = road.x1 - road.x0 > road.y1 - road.y0;
         const mid = horizontal ? (road.y0 + road.y1) / 2 : (road.x0 + road.x1) / 2;
-        const line = horizontal
-          ? [project(road.x0, mid), project(road.x1, mid)]
-          : [project(mid, road.y0), project(mid, road.y1)];
+        const line = horizontal ? [iso.project(road.x0, mid), iso.project(road.x1, mid)] : [iso.project(mid, road.y0), iso.project(mid, road.y1)];
         return (
           <g key={`${road.x0}-${road.y0}-${road.x1}-${road.y1}`}>
-            <polygon className="wh-road" points={groundQuad(road.x0, road.y0, road.x1, road.y1)} />
+            <polygon className="wh-road" points={iso.groundQuad(road.x0, road.y0, road.x1, road.y1)} />
             <polyline className="wh-road-line" points={polygon(line)} />
           </g>
         );
@@ -62,19 +52,19 @@ function Ground() {
   );
 }
 
-function SelectionMarker({ warehouse }: { warehouse: Warehouse }) {
-  const { box } = SCENE_LAYOUT[warehouse.id];
-  const [ax, ay] = project(box.x + box.w / 2, box.y + box.d / 2, box.h);
+function SelectionMarker({ scene, id }: { scene: Scene; id: string }) {
+  const { box } = scene.layouts[id];
+  const [ax, ay] = scene.iso.project(box.x + box.w / 2, box.y + box.d / 2, box.h);
   return (
-    <g key={warehouse.id} className="wh-marker" pointerEvents="none">
+    <g key={id} className="wh-marker" pointerEvents="none">
       <line x1={ax} y1={ay - 13} x2={ax} y2={ay - 3} />
       <polygon points={`${ax - 7},${ay - 24} ${ax + 7},${ay - 24} ${ax},${ay - 13}`} />
     </g>
   );
 }
 
-function Tooltip({ warehouse }: { warehouse: Warehouse }) {
-  const { left, top } = anchorOf(warehouse);
+function Tooltip({ scene, warehouse }: { scene: Scene; warehouse: Warehouse }) {
+  const { left, top } = anchorOf(scene, warehouse.id);
   const placement = top < 42 ? "below" : "above";
   const align = left < 20 ? "start" : left > 80 ? "end" : "center";
   return (
@@ -84,7 +74,7 @@ function Tooltip({ warehouse }: { warehouse: Warehouse }) {
       <dl className="wh-tip__stats">
         <div>
           <dt>Utilization</dt>
-          <dd>{warehouse.utilization}%</dd>
+          <dd>{formatUtilization(warehouse.utilization)}</dd>
         </div>
         <div>
           <dt>Stock</dt>
@@ -100,49 +90,61 @@ function Tooltip({ warehouse }: { warehouse: Warehouse }) {
 }
 
 export function WarehouseVisualization({ warehouses, selectedId, hoveredId, onSelect, onHover }: WarehouseVisualizationProps) {
-  const ordered = [...warehouses].sort((a, b) => {
-    const boxA = SCENE_LAYOUT[a.id].box;
-    const boxB = SCENE_LAYOUT[b.id].box;
+  // The layout only changes when the set of warehouses or their relative stock does, not on every refetch,
+  // so the memo is keyed on a serialized copy of exactly those inputs.
+  const sceneInput = JSON.stringify(warehouses.map((w) => [w.id, w.totalStock]));
+  const scene = useMemo(() => {
+    const entries = JSON.parse(sceneInput) as [string, number][];
+    return buildScene(entries.map(([id]) => id), Object.fromEntries(entries));
+  }, [sceneInput]);
+
+  const onMap = warehouses.filter((w) => scene.layouts[w.id]);
+  const ordered = [...onMap].sort((a, b) => {
+    const boxA = scene.layouts[a.id].box;
+    const boxB = scene.layouts[b.id].box;
     return boxA.x + boxA.y - (boxB.x + boxB.y);
   });
-  const selected = warehouses.find((w) => w.id === selectedId) ?? null;
-  const hovered = warehouses.find((w) => w.id === hoveredId) ?? null;
-  const hasSelection = selected !== null;
+  const selected = onMap.find((w) => w.id === selectedId) ?? null;
+  const hovered = onMap.find((w) => w.id === hoveredId) ?? null;
+  const hasSelection = warehouses.some((w) => w.id === selectedId);
+  const iso: Iso = scene.iso;
 
   return (
     <div className="wh-stage" onClick={() => onSelect(null)}>
       <div className="wh-stage__corners" aria-hidden="true" />
       <p className="wh-hud wh-hud--tl" aria-hidden="true">
-        Network view <span>/ isometric</span>
+        Network view <span>/ isometric{scene.hiddenCount > 0 ? ` · +${scene.hiddenCount} more in the list` : ""}</span>
       </p>
 
-      <div className="wh-canvas" style={{ aspectRatio: `${SCENE_WIDTH} / ${SCENE_HEIGHT}` }}>
-        <svg viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`} className="wh-svg" role="group" aria-label="Warehouse network map">
-          <defs>
-            <filter id="wh-blur" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="9" />
-            </filter>
-          </defs>
-          <Ground />
-          {ordered.map((warehouse) => (
-            <WarehouseBuilding
-              key={warehouse.id}
-              warehouse={warehouse}
-              layout={SCENE_LAYOUT[warehouse.id]}
-              index={warehouses.indexOf(warehouse)}
-              selected={warehouse.id === selectedId}
-              hovered={warehouse.id === hoveredId}
-              dimmed={hasSelection && warehouse.id !== selectedId}
-              onSelect={onSelect}
-              onHover={onHover}
-            />
-          ))}
-          {selected && <SelectionMarker warehouse={selected} />}
-        </svg>
+      <div className="wh-canvas" style={{ aspectRatio: `${iso.width} / ${iso.height}` }}>
+        <IsoContext.Provider value={iso}>
+          <svg viewBox={`0 0 ${iso.width} ${iso.height}`} className="wh-svg" role="group" aria-label="Warehouse network map">
+            <defs>
+              <filter id="wh-blur" x="-40%" y="-40%" width="180%" height="180%">
+                <feGaussianBlur stdDeviation="9" />
+              </filter>
+            </defs>
+            <Ground scene={scene} />
+            {ordered.map((warehouse) => (
+              <WarehouseBuilding
+                key={warehouse.id}
+                warehouse={warehouse}
+                layout={scene.layouts[warehouse.id]}
+                index={onMap.indexOf(warehouse)}
+                selected={warehouse.id === selectedId}
+                hovered={warehouse.id === hoveredId}
+                dimmed={hasSelection && warehouse.id !== selectedId}
+                onSelect={onSelect}
+                onHover={onHover}
+              />
+            ))}
+            {selected && <SelectionMarker scene={scene} id={selected.id} />}
+          </svg>
+        </IsoContext.Provider>
 
         <div className="wh-overlay">
-          {warehouses.map((warehouse) => {
-            const { left, top } = anchorOf(warehouse);
+          {onMap.map((warehouse) => {
+            const { left, top } = anchorOf(scene, warehouse.id);
             const isSelected = warehouse.id === selectedId;
             const isHovered = warehouse.id === hoveredId;
             const classes = [
@@ -166,12 +168,12 @@ export function WarehouseVisualization({ warehouses, selectedId, hoveredId, onSe
                 }}
               >
                 <span className="wh-chip__num">{warehouse.number}</span>
-                <span className="wh-chip__pct">{warehouse.utilization}%</span>
+                <span className="wh-chip__pct">{formatUtilization(warehouse.utilization)}</span>
                 {warehouse.status === "Warning" && <span className="wh-chip__warn" />}
               </div>
             );
           })}
-          {hovered && <Tooltip warehouse={hovered} />}
+          {hovered && <Tooltip scene={scene} warehouse={hovered} />}
         </div>
       </div>
 

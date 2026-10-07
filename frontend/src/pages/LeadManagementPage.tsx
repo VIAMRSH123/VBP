@@ -8,6 +8,7 @@ import { leadColumns } from "../components/leadColumns";
 import { PageHeader } from "../components/PageHeader";
 import { IconSearch } from "../components/icons";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { SOURCE_FILTERS } from "../lib/leadSource";
 import { PIPELINE_STATUSES } from "../lib/pipeline";
 
 const COLUMNS = [
@@ -16,6 +17,7 @@ const COLUMNS = [
   leadColumns.contact,
   leadColumns.product,
   leadColumns.status,
+  leadColumns.source,
   leadColumns.priority,
   leadColumns.rep,
   leadColumns.score,
@@ -26,6 +28,7 @@ export function LeadManagementPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const status = params.get("status") ?? "";
+  const source = params.get("source") ?? "";
   // `?q=` seeds the search (the ⌘K "Search leads" command lands here); the box keeps its own
   // draft so typing never waits on a refetch.
   const urlQuery = params.get("q") ?? "";
@@ -36,21 +39,21 @@ export function LeadManagementPage() {
     setDraft(urlQuery);
   }, [urlQuery]);
 
-  function setStatus(next: string) {
+  function setParam(name: string, next: string) {
     const nextParams = new URLSearchParams(params);
-    if (next) nextParams.set("status", next);
-    else nextParams.delete("status");
+    if (next) nextParams.set(name, next);
+    else nextParams.delete(name);
     setParams(nextParams, { replace: true });
   }
 
   const { data, isPending, isError } = useQuery({
-    queryKey: ["leads", search, status],
-    queryFn: () => listLeads({ search: search || undefined, status: status || undefined, limit: 100 }),
+    queryKey: ["leads", search, status, source],
+    queryFn: () => listLeads({ search: search || undefined, status: status || undefined, source: source || undefined, limit: 100 }),
     placeholderData: keepPreviousData,
     refetchInterval: 15000,
   });
 
-  const filtered = Boolean(search || status);
+  const filtered = Boolean(search || status || source);
 
   function clearFilters() {
     setDraft("");
@@ -79,10 +82,16 @@ export function LeadManagementPage() {
             className="input-field w-full pl-8"
           />
         </div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="input-field" aria-label="Filter by status">
+        <select value={status} onChange={(e) => setParam("status", e.target.value)} className="input-field" aria-label="Filter by status">
           <option value="">All statuses</option>
           {PIPELINE_STATUSES.map((s) => (
             <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <select value={source} onChange={(e) => setParam("source", e.target.value)} className="input-field" aria-label="Filter by source">
+          <option value="">All sources</option>
+          {SOURCE_FILTERS.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
       </div>
@@ -99,7 +108,7 @@ export function LeadManagementPage() {
           pageSize={15}
           emptyTitle={filtered ? "No leads match your filters" : "No leads yet"}
           emptyDescription={
-            filtered ? "Try a different search term or status." : "Leads appear here as soon as they arrive from WhatsApp."
+            filtered ? "Try a different search term, status or source." : "Leads appear here after the next sync from SAP."
           }
           emptyAction={
             filtered ? (

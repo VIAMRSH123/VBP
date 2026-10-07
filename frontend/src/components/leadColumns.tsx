@@ -1,7 +1,8 @@
 import type { Lead } from "../types";
 import { formatCurrency } from "../lib/format";
 import type { Column } from "./DataTable";
-import { PriorityBadge, StatusBadge } from "./StatusBadge";
+import { leadSource } from "../lib/leadSource";
+import { Badge, PriorityBadge, StatusBadge } from "./StatusBadge";
 
 /** Column definitions shared by every lead table, so a lead looks the same wherever it appears. */
 export const leadColumns = {
@@ -38,6 +39,15 @@ export const leadColumns = {
     header: "Status",
     sortValue: (l) => l.status,
     cell: (l) => <StatusBadge status={l.status} />,
+  },
+  source: {
+    key: "source",
+    header: "Source",
+    sortValue: (l) => leadSource(l).label,
+    cell: (l) => {
+      const { label, tone } = leadSource(l);
+      return <Badge tone={tone} label={label} />;
+    },
   },
   priority: {
     key: "priority",
