@@ -22,13 +22,13 @@ _FIELD_PATTERNS = {
     "phone": r"phone\s*:\s*([+\d][\d\s\-]{5,})",
     "email": r"email\s*:\s*([^\s]+@[^\s]+)",
     "product": r"product\s*:\s*(.+?)(?=\n|quantity|status|remarks|$)",
-    "quantity": r"quantity\s*:\s*(\d+)",
+    "quantity": r"quantity\s*:\s*(\d[\d,]*)",
     "status": r"status\s*:\s*(.+?)(?=\n|remarks|$)",
     "remarks": r"remarks\s*:\s*(.+?)$",
     "lead_id_reference": r"lead\s*id\s*:\s*(L-\d+)",
 }
 
-REQUIRED_FOR_NEW_LEAD = ["company", "contact_name", "phone", "product"]
+REQUIRED_FOR_NEW_LEAD = ["company", "contact_name", "product"]
 
 
 def _heuristic_extract(message: str) -> dict:
@@ -38,7 +38,7 @@ def _heuristic_extract(message: str) -> dict:
     for key, pattern in _FIELD_PATTERNS.items():
         match = re.search(pattern, lowered, re.IGNORECASE | re.MULTILINE)
         if match:
-            raw_value = text[match.start(1) : match.end(1)].strip(" .")
+            raw_value = text[match.start(1) : match.end(1)].strip(" .\n\t")
             fields[key] = raw_value
 
     if "quantity" in fields:
@@ -53,6 +53,9 @@ def _heuristic_extract(message: str) -> dict:
     missing = []
     if message_type == "new_lead":
         missing = [f for f in REQUIRED_FOR_NEW_LEAD if not fields.get(f)]
+        # A phone OR an email is enough to follow up (SALES_REP_GUIDE rule 2).
+        if not fields.get("phone") and not fields.get("email"):
+            missing.insert(2, "phone")
 
     confidence = 0.9 if message_type != "unknown" and not missing else (0.6 if fields else 0.2)
 

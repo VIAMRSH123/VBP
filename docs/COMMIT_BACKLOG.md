@@ -30,7 +30,7 @@ The SAP layer has 5 test files and 103 passing tests. The **original pipeline ha
 already exists: `app/tests/conftest.py` provides `db`, `client`, `auth("<role>")` and `mock_sap`
 fixtures, so each item below is a self-contained sitting.
 
-- [ ] **A1 — `test_extraction.py`** for `services/ai/extraction.py`. Every field label the guide
+- [x] **A1 — `test_extraction.py`** for `services/ai/extraction.py`. Every field label the guide
       documents (Company/Contact/Phone/Email/Product/Quantity), fields in any order, extra prose
       around them, a `LeadID:`/`Status:` status-update message, and the incomplete message that must
       still yield a partial record. Keep in sync with `docs/SALES_REP_GUIDE.md`.
@@ -105,3 +105,4 @@ commit as the work, so the sha isn't known yet — leave it out.
 
 - 2026-10-20 — setup — chore: tighten gitignore for secrets, snapshots and vault noise (e5f550e)
 - 2026-10-20 — setup — feat: run the demo backend as a Vercel serverless function (49b87a0)
+- 2026-10-19 — A1 — test: cover lead extraction and fix phone, quantity and email-only bugs it exposed
