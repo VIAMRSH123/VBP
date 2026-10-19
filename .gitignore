@@ -24,3 +24,25 @@ new skills /
 
 # The website lives in its own repo: VIAMRSH123/tfs-suncons-website
 website/
+
+# Vercel local link state.
+.vercel
+
+# Secrets. The .env.example templates are tracked on purpose, so re-include
+# them — a bare `.env*` would hide future edits to them from `git status`.
+.env*
+!.env.example
+!**/.env.example
+
+# Database snapshots taken before migrations (api/seed/lakehouse.db is the one
+# deliberately tracked snapshot, built scrubbed by backend/scripts/build_demo_db.py).
+backend/*.bak-*
+
+# Market research and the KANKAR pitch deck are a separate line of work: the
+# folder is its own git repo and holds unencrypted API keys. Never commit it.
+docs/market-research/
+KANKAR/
+
+# Obsidian vault noise that lands in the project root.
+Untitled.*
+20??-??-??.md
