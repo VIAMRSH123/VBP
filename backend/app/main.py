@@ -16,9 +16,11 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    start_scheduler()
+    if settings.enable_scheduler:
+        start_scheduler()
     yield
-    stop_scheduler()
+    if settings.enable_scheduler:
+        stop_scheduler()
 
 
 app = FastAPI(title="Enterprise Lead Management Platform", version="1.0.0", lifespan=lifespan)

@@ -11,6 +11,10 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./lakehouse.db"
 
+    # APScheduler runs in-process, so it must be off wherever the app runs as a
+    # serverless function (the Vercel demo) or inside a build script.
+    enable_scheduler: bool = True
+
     wasender_api_key: str = ""
     wasender_webhook_secret: str = ""  # removed together with the inbound webhook (phase 7)
 

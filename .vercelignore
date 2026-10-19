@@ -1,0 +1,29 @@
+# Secrets — these must never reach a public deployment.
+.env
+*/.env
+**/.env
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# The working database holds real WhatsApp traffic. The deployment uses the
+# scrubbed snapshot at api/seed/lakehouse.db, built by backend/scripts/build_demo_db.py.
+backend/lakehouse.db
+backend/*.db
+backend/*.bak-*
+backend/quip_mock/
+backend/*.log
+backend/venv/
+
+# Build and editor noise.
+node_modules
+frontend/node_modules
+frontend/dist
+**/__pycache__/
+.DS_Store
+.obsidian/
+docs/market-research/
+KANKAR/
+website/
+*.docx
+*.pdf
