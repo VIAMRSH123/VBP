@@ -12,6 +12,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["/Users/viamrsh/Desktop/VBP/frontend/run.sh"],
       "port": 5173
+    },
+    {
+      "_comment": "Attach-only: launching by name hits this environment's sandbox getcwd error (see docs/RUNBOOK.md). Start it with `cd website && npm run dev`, then preview this entry.",
+      "name": "website",
+      "port": 3000,
+      "url": "http://localhost:3000"
     }
   ]
 }
