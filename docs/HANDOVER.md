@@ -172,6 +172,31 @@ no push trigger — would need a scheduled poll job (same pattern as the existin
 job in `app/workers/scheduler.py`). Recommended as an *addition* to the WhatsApp webhook, not a
 replacement — not yet built.
 
+## Website enquiries → leads (added 2026-10-23)
+
+The TFS website (`website/`, its own repo) now posts trade enquiries — including the buyer's
+"enquiry basket" of products, pack sizes and quantities — to `POST /api/webhooks/website`
+(`app/api/website.py`). They run through the same `PipelineOrchestrator.run_lead_ingestion()` as
+WhatsApp leads, with `channel="website"`:
+
+- **Structured fields skip the text extractor** (`app/services/website_enquiry.py → to_lead_fields`),
+  so company names aren't truncated at extractor keywords. The rep-style text is still stored as the
+  raw record, with visitor text neutralised (no colons, no "lead id" / "status update" phrases).
+- **The website channel never applies status updates** — an anonymous visitor cannot change
+  someone else's lead, even by typing "Lead ID: L-10005 Status: Lost".
+- Auth: `Authorization: Bearer <WEBSITE_ENQUIRY_TOKEN>` (constant-time compare), checked before the
+  body is parsed. With the token unset the endpoint returns 503 for everything.
+- Leads arrive with `source = "website"`, origin "Website enquiry".
+- To switch on: set `WEBSITE_ENQUIRY_TOKEN` in `backend/.env` (then restart — `.env` is not
+  hot-reloaded), and on the website set `ENQUIRY_WEBHOOK_URL=<backend>/api/webhooks/website` and
+  `ENQUIRY_WEBHOOK_TOKEN` to the same value.
+- Verified end-to-end over HTTP on 2026-10-23 against a throwaway instance. Tests:
+  `app/tests/test_website_enquiry.py` (18).
+- **Testing gotcha:** the Quip mock writes to `backend/quip_mock/<lead>.json` regardless of which
+  database an instance uses, so a throwaway backend's first lead (`L-10000`) overwrites the real
+  `L-10000` snapshot. Point `quip_client.MOCK_DIR` elsewhere for ad-hoc runs (the pytest fixture
+  `quiet_quip` already does).
+
 ## Sales Rep / Dad Training Guide
 
 The full non-technical, print/share-friendly version of "how to actually use this day to day" lives
