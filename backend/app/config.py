@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     wasender_api_key: str = ""
     wasender_webhook_secret: str = ""  # removed together with the inbound webhook (phase 7)
 
+    # Shared secret the TFS website sends as `Authorization: Bearer ...` on POST /api/webhooks/website.
+    # Empty = the endpoint refuses everything (503), so it is never open by default.
+    website_enquiry_token: str = ""
+
     # SAP Business One Service Layer. sap_mode: off (default, nothing syncs) | mock | live.
     sap_mode: str = "off"
     sap_base_url: str = ""  # e.g. https://sap-host:50000/b1s/v1  (v2 for OData v4)

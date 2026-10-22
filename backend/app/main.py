@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import admin, auth, dashboard, leads, notifications, pipeline, reminders, reports, representatives, sap, warehouses, whatsapp
+from app.api import admin, auth, dashboard, leads, notifications, pipeline, reminders, reports, representatives, sap, warehouses, website, whatsapp
 from app.config import get_settings
 from app.db import init_db
 from app.workers.scheduler import start_scheduler, stop_scheduler
@@ -35,6 +35,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(whatsapp.router)
+app.include_router(website.router)
 app.include_router(leads.router)
 app.include_router(representatives.router)
 app.include_router(notifications.router)
