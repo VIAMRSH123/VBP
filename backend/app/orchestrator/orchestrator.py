@@ -34,6 +34,9 @@ from app.integrations import quip_client
 
 logger = logging.getLogger("orchestrator")
 
+# How each ingestion channel is labelled on the lead it creates.
+_CHANNEL_ORIGINS = {"whatsapp": "WhatsApp message", "website": "Website enquiry"}
+
 
 class PipelineFailure(Exception):
     def __init__(self, stage: str, original: Exception):
@@ -112,11 +115,21 @@ class PipelineOrchestrator:
         self.db.commit()
         self._emit(execution, events.PIPELINE_FAILED, execution.current_stage, {"error": error}, success=False)
 
-    def run_lead_ingestion(self, raw_message: str, sender_phone: str, actor: str = "whatsapp-webhook") -> PipelineExecution:
+    def run_lead_ingestion(
+        self,
+        raw_message: str,
+        sender_phone: str,
+        actor: str = "whatsapp-webhook",
+        *,
+        channel: str = "whatsapp",
+        structured_fields: dict | None = None,
+    ) -> PipelineExecution:
+        """`channel="website"` passes `structured_fields` (no text extraction) and never applies a
+        status update — the sender is an anonymous visitor, not a rep."""
         db = self.db
         execution = PipelineExecution(
             workflow_name="lead_ingestion",
-            trigger_source="whatsapp",
+            trigger_source=channel,
             status="running",
             started_at=_now_iso(),
         )
@@ -133,12 +146,18 @@ class PipelineOrchestrator:
             self._emit(execution, events.LEAD_CREATED, "bronze_ingest", {"bronze_id": bronze.id})
 
             # Stage 4: Claude extraction
-            fields = self._run_stage(execution, "extraction", lambda: extraction.extract_lead(db, raw_message, sender_phone))
+            fields = self._run_stage(
+                execution,
+                "extraction",
+                lambda: structured_fields if structured_fields is not None
+                else extraction.extract_lead(db, raw_message, sender_phone),
+            )
 
             # Stage 5: validation
             validation_result = self._run_stage(execution, "validation", lambda: validation.validate_lead(db, fields))
 
-            if fields.get("message_type") == "status_update" and fields.get("lead_id_reference"):
+            is_status_update = fields.get("message_type") == "status_update" and fields.get("lead_id_reference")
+            if channel != "website" and is_status_update:
                 lead = self._apply_status_update(execution, fields, bronze, actor)
                 execution.lead_id = lead.id if lead else ""
                 execution.status = "success"
@@ -171,7 +190,7 @@ class PipelineOrchestrator:
                 "persist",
                 lambda: self._create_lead(
                     fields, validation_result, dup_result,
-                    source="whatsapp", origin="WhatsApp message", sender_phone=sender_phone, raw_message=raw_message,
+                    source=channel, origin=_CHANNEL_ORIGINS.get(channel, channel), sender_phone=sender_phone, raw_message=raw_message,
                 ),
             )
             bronze.lead_id = lead.id
