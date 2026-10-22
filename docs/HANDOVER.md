@@ -172,7 +172,7 @@ no push trigger — would need a scheduled poll job (same pattern as the existin
 job in `app/workers/scheduler.py`). Recommended as an *addition* to the WhatsApp webhook, not a
 replacement — not yet built.
 
-## Website enquiries → leads (added 2026-10-23)
+## Website enquiries → leads (added 2026-10-22)
 
 The TFS website (`website/`, its own repo) now posts trade enquiries — including the buyer's
 "enquiry basket" of products, pack sizes and quantities — to `POST /api/webhooks/website`
@@ -190,7 +190,7 @@ WhatsApp leads, with `channel="website"`:
 - To switch on: set `WEBSITE_ENQUIRY_TOKEN` in `backend/.env` (then restart — `.env` is not
   hot-reloaded), and on the website set `ENQUIRY_WEBHOOK_URL=<backend>/api/webhooks/website` and
   `ENQUIRY_WEBHOOK_TOKEN` to the same value.
-- Verified end-to-end over HTTP on 2026-10-23 against a throwaway instance. Tests:
+- Verified end-to-end over HTTP on 2026-10-22 against a throwaway instance. Tests:
   `app/tests/test_website_enquiry.py` (18).
 - **Testing gotcha:** the Quip mock writes to `backend/quip_mock/<lead>.json` regardless of which
   database an instance uses, so a throwaway backend's first lead (`L-10000`) overwrites the real
