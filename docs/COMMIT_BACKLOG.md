@@ -34,10 +34,13 @@ fixtures, so each item below is a self-contained sitting.
       documents (Company/Contact/Phone/Email/Product/Quantity), fields in any order, extra prose
       around them, a `LeadID:`/`Status:` status-update message, and the incomplete message that must
       still yield a partial record. Keep in sync with `docs/SALES_REP_GUIDE.md`.
-- [ ] **A2 — `test_validation.py`** for `services/ai/validation.py`. Mandatory-field rules (Company,
+- [x] **A2 — `test_validation.py`** for `services/ai/validation.py`. Mandatory-field rules (Company,
       Contact, Product, Sales Rep, phone-or-email), phone and email format, `quantity > 0`, unknown
       product, and the rule that an incomplete record still persists as `Draft` rather than being
       dropped.
+      *Done for what `validation.py` implements. Not in the code, so not tested: a Sales Rep
+      mandatory check and an unknown-product check (the blueprint lists both). The Draft-persists
+      rule lives in the orchestrator and belongs to A5.*
 - [ ] **A3 — `test_duplicate_detection.py`**. Exact phone repeat merges into the existing lead
       (the behaviour `SALES_REP_GUIDE.md` promises reps), same company with a different contact,
       and a genuinely new lead that must not be merged.
@@ -106,3 +109,4 @@ commit as the work, so the sha isn't known yet — leave it out.
 - 2026-10-20 — setup — chore: tighten gitignore for secrets, snapshots and vault noise (e5f550e)
 - 2026-10-20 — setup — feat: run the demo backend as a Vercel serverless function (49b87a0)
 - 2026-10-19 — A1 — test: cover lead extraction and fix phone, quantity and email-only bugs it exposed
+- 2026-10-27 — A2 — test: cover lead validation rules and SAP record validation
