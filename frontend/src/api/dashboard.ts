@@ -104,3 +104,17 @@ export async function getUnassignedTab(): Promise<UnassignedStats> {
   const { data } = await apiClient.get<UnassignedStats>("/api/dashboard/tabs/unassigned");
   return data;
 }
+
+export interface TerritoryStat {
+  territory: string;
+  leads: number;
+  active: number;
+  won: number;
+  lost: number;
+  pipeline_value: number;
+}
+
+export async function getTerritories(): Promise<TerritoryStat[]> {
+  const { data } = await apiClient.get<{ territories: TerritoryStat[] }>("/api/dashboard/territories");
+  return data.territories;
+}

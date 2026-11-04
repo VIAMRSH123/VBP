@@ -113,9 +113,11 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {visible.map((row) => (
+            {visible.map((row, rowIndex) => (
               <tr
                 key={rowKey(row)}
+                className="stagger-in"
+                style={{ ["--i" as string]: Math.min(rowIndex, 10) }}
                 data-clickable={onRowClick ? "" : undefined}
                 tabIndex={onRowClick ? 0 : undefined}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}

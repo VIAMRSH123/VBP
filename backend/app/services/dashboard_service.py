@@ -1,13 +1,14 @@
 """Gold-layer KPI aggregation — Blueprint Part 5 / Part 6 Scheduler."""
 from datetime import datetime, timezone
 
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.models.activity import LeadStatusHistory
 from app.models.dashboard import DashboardMetric
 from app.models.lead import Lead
 from app.models.notification import ReminderQueue
+from app.models.representative import Representative
 
 TERMINAL_STATUSES = ("Won", "Lost", "Archived")
 ENGAGED_STATUSES = (
@@ -115,6 +116,38 @@ def _lead_query(db: Session, representative_id: str | None = None):
     if representative_id:
         query = query.filter(Lead.representative_id == representative_id)
     return query
+
+
+# A lead's own territory wins; enrichment rarely fills it for WhatsApp leads, so the assigned
+# representative's territory is the fallback.
+EFFECTIVE_TERRITORY = case((Lead.territory != "", Lead.territory), else_=func.coalesce(Representative.territory, ""))
+
+
+def get_territory_stats(db: Session, representative_id: str | None = None) -> list[dict]:
+    """Per-territory lead counts and open pipeline value, biggest pipeline first.
+
+    Leads with no territory at all are grouped under "Unassigned" so none disappear from the totals.
+    """
+    rows: dict[str, dict] = {}
+    for status, territory, value in (
+        _lead_query(db, representative_id)
+        .outerjoin(Representative, Representative.id == Lead.representative_id)
+        .with_entities(Lead.status, EFFECTIVE_TERRITORY, Lead.deal_size_estimate)
+        .all()
+    ):
+        name = (territory or "").strip() or "Unassigned"
+        row = rows.setdefault(
+            name, {"territory": name, "leads": 0, "active": 0, "won": 0, "lost": 0, "pipeline_value": 0.0}
+        )
+        row["leads"] += 1
+        if status == "Won":
+            row["won"] += 1
+        elif status == "Lost":
+            row["lost"] += 1
+        if status not in TERMINAL_STATUSES:
+            row["active"] += 1
+            row["pipeline_value"] += value or 0.0
+    return sorted(rows.values(), key=lambda r: (-r["pipeline_value"], -r["leads"], r["territory"]))
 
 
 def get_overview_stats(db: Session, representative_id: str | None = None) -> dict:

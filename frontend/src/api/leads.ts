@@ -6,6 +6,7 @@ export interface LeadFilters {
   representative_id?: string;
   search?: string;
   source?: string;
+  territory?: string;
   limit?: number;
   offset?: number;
 }

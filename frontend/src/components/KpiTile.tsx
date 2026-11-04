@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import { useSpotlight } from "../hooks/useSpotlight";
 import { IconInfo } from "./icons";
 
 interface KpiTileProps {
@@ -12,10 +13,11 @@ interface KpiTileProps {
 
 export function KpiTile({ label, value, description, hint, tone = "default", featured = false }: KpiTileProps) {
   const tooltipId = useId();
+  const spot = useSpotlight();
   const color = tone === "danger" ? "var(--danger)" : tone === "success" ? "var(--success)" : "var(--ink)";
 
   return (
-    <div className={`card card-interactive ${featured ? "p-5" : "p-4"}`}>
+    <div className={`card card-interactive spotlight ${featured ? "p-5" : "p-4"}`} {...spot}>
       <div className="flex items-center gap-1.5">
         <p className="eyebrow">{label}</p>
         <span className="group relative inline-flex">

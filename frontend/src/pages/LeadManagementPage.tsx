@@ -29,6 +29,7 @@ export function LeadManagementPage() {
   const navigate = useNavigate();
   const status = params.get("status") ?? "";
   const source = params.get("source") ?? "";
+  const territory = params.get("territory") ?? "";
   // `?q=` seeds the search (the ⌘K "Search leads" command lands here); the box keeps its own
   // draft so typing never waits on a refetch.
   const urlQuery = params.get("q") ?? "";
@@ -47,13 +48,13 @@ export function LeadManagementPage() {
   }
 
   const { data, isPending, isError } = useQuery({
-    queryKey: ["leads", search, status, source],
-    queryFn: () => listLeads({ search: search || undefined, status: status || undefined, source: source || undefined, limit: 100 }),
+    queryKey: ["leads", search, status, source, territory],
+    queryFn: () => listLeads({ search: search || undefined, status: status || undefined, source: source || undefined, territory: territory || undefined, limit: 100 }),
     placeholderData: keepPreviousData,
     refetchInterval: 15000,
   });
 
-  const filtered = Boolean(search || status || source);
+  const filtered = Boolean(search || status || source || territory);
 
   function clearFilters() {
     setDraft("");
@@ -94,6 +95,11 @@ export function LeadManagementPage() {
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
+        {territory && (
+          <button type="button" onClick={() => setParam("territory", "")} className="input-field inline-flex items-center gap-1.5" aria-label={`Remove territory filter ${territory}`}>
+            Territory: {territory} <span aria-hidden="true">×</span>
+          </button>
+        )}
       </div>
 
       {isError && <ErrorBanner message="Failed to load leads." />}

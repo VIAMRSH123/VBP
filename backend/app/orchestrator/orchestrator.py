@@ -561,6 +561,9 @@ class PipelineOrchestrator:
             lead.representative_name = rep.name
             lead.manager_id = rep.manager_id
             lead.assignment_confidence = result["confidence"]
+            if not lead.territory:
+                # Enrichment rarely resolves a territory from a WhatsApp message; the rep's patch is the best signal.
+                lead.territory = rep.territory
             db.commit()
             if lead.status == "New":
                 lead_service.change_status(db, lead, "Assigned", actor="pipeline")

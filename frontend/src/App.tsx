@@ -12,6 +12,8 @@ import { NotificationCenterPage } from "./pages/NotificationCenterPage";
 import { OperationsDashboardPage } from "./pages/OperationsDashboardPage";
 import { AdministrationPage } from "./pages/AdministrationPage";
 import { WarehousePage } from "./pages/WarehousePage";
+import { PipelinePage } from "./pages/PipelinePage";
+import { TerritoryPage } from "./pages/TerritoryPage";
 
 function App() {
   return (
@@ -26,6 +28,8 @@ function App() {
 
           <Route path="/leads" element={<LeadManagementPage />} />
           <Route path="/leads/:id" element={<LeadDetailPage />} />
+          <Route path="/pipeline" element={<PipelinePage />} />
+          <Route path="/territories" element={<TerritoryPage />} />
 
           <Route
             element={<ProtectedRoute allowedRoles={["administrator", "sales_manager", "sales_representative"]} />}

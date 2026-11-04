@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 import type { UserRole } from "../types";
-import { IconList, IconUser, IconUsers, IconChart, IconBell, IconPulse, IconSettings, IconWarehouse } from "./icons";
+import { IconList, IconUser, IconUsers, IconChart, IconBell, IconPulse, IconSettings, IconWarehouse, IconPipeline, IconMap } from "./icons";
 
 export interface NavItem {
   label: string;
@@ -19,6 +19,8 @@ const ALL_ROLES: UserRole[] = [
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Lead Management", path: "/leads", roles: ALL_ROLES, icon: IconList },
+  { label: "Pipeline", path: "/pipeline", roles: ALL_ROLES, icon: IconPipeline },
+  { label: "Territories", path: "/territories", roles: ALL_ROLES, icon: IconMap },
   { label: "Sales Representative", path: "/my-leads", roles: ["administrator", "sales_manager", "sales_representative"], icon: IconUser },
   { label: "Sales Manager", path: "/team", roles: ["administrator", "sales_manager"], icon: IconUsers },
   { label: "Warehouse", path: "/warehouse", roles: ["administrator", "sales_manager", "executive", "read_only_auditor"], icon: IconWarehouse },

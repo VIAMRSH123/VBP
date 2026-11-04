@@ -1,3 +1,5 @@
+import { useSpotlight } from "../hooks/useSpotlight";
+
 interface StatCardProps {
   label: string;
   value: string | number;
@@ -14,8 +16,9 @@ const TONE_COLOR: Record<NonNullable<StatCardProps["tone"]>, string> = {
 
 export function StatCard({ label, value, hint, tone = "default", variant = "default" }: StatCardProps) {
   const compact = variant === "compact";
+  const spot = useSpotlight();
   return (
-    <div className={`card card-interactive ${compact ? "p-3.5" : "p-4"}`}>
+    <div className={`card card-interactive spotlight ${compact ? "p-3.5" : "p-4"}`} {...spot}>
       <p className="eyebrow">{label}</p>
       <p
         className={`${compact ? "mt-1.5 text-xl" : "stat-value mt-2"} font-semibold tabular-nums`}

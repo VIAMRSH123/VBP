@@ -20,6 +20,25 @@ export function IconHome(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconPipeline(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="4" width="5" height="16" rx="1" />
+      <rect x="10" y="4" width="5" height="10" rx="1" />
+      <rect x="17" y="4" width="4" height="13" rx="1" />
+    </svg>
+  );
+}
+
+export function IconMap(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z" />
+      <path d="M9 4v14M15 6v14" />
+    </svg>
+  );
+}
+
 export function IconList(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} {...props}>

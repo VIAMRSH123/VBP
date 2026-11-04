@@ -66,6 +66,19 @@ warehouses (hover → cyan, click → green, details panel updates), driven enti
 `pages/warehouse/data.ts` — replace that module with an API call when a real inventory source exists.
 The dark stage is intentionally kept in both themes.
 
+**Pipeline board** (`/pipeline`, `pages/PipelinePage.tsx` + `pages/pipeline/`): drag-and-drop kanban (dnd-kit).
+Only valid next stages light up (`lib/statusTransitions.ts` mirrors `STATUS_TRANSITIONS` in
+`backend/app/services/lead_service.py` — keep both in sync); drops use `PUT /api/leads/{id}/status` with an
+optimistic update and rollback; Won fires a confetti sweep. Read-only for executive / auditor roles.
+
+**Territory map + live radar** (`/territories`, `pages/TerritoryPage.tsx` + `pages/territory/`): stylised Qatar
+map (hand-authored shapes in `geo.ts`, not survey-accurate), extruded by open pipeline value and coloured on a
+ramp. Data: `GET /api/dashboard/territories` (rep-scoped); `GET /api/leads?territory=` filters the list. A lead's
+territory is its own value, else its assigned rep's (the orchestrator now copies the rep's territory onto the lead at
+assignment; older leads fall back at query time via `EFFECTIVE_TERRITORY`). The radar polls the 20 newest leads
+every 10s and pings the region of any lead that appears after load — no websocket. Design exception recorded in
+`docs/DECISIONS.md`.
+
 ## WhatsApp integration — DONE, verified end-to-end with a real message (2026-07-19)
 
 **Goal**: get real WhatsApp messages flowing into the dashboard as leads. **Achieved** — a real

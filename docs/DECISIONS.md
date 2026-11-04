@@ -27,6 +27,16 @@ decorative gradients).
   warehouse) is intentionally kept as the visual centrepiece in both themes; only its surrounding
   chrome follows the system above.
 
+### Approved exception: showpiece pages (2026-11-04)
+
+At VB's explicit request the monochrome / flat / short-motion rules above are **lifted for these surfaces only**:
+the **Pipeline** deal board (`/pipeline`) and the **Territories** map + live radar (`/territories`), plus a small
+set of app-wide touches (cursor spotlight on stat tiles, staggered table-row entrance, count-up numbers). They use
+a dark stage like Warehouse, a value-driven teal ramp, glow, blur on the hover card and continuous pings. The
+rest of the app keeps the system above — do not spread these effects to other pages, and do not treat this as
+reverting the Vercel-inspired direction. All new motion respects `prefers-reduced-motion`. Shared motion lives in
+`frontend/src/styles/showpiece.css`.
+
 ## WhatsApp integration
 
 Uses **WaSenderAPI** (QR-linked, wasenderapi.com), not Meta's official WhatsApp Cloud API —

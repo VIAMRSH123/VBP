@@ -1,0 +1,49 @@
+/* Showpiece motion layer — pipeline board, territory map, spotlight cards.
+   Approved exception to the DECISIONS.md motion rules (see docs/DECISIONS.md, 2026-11-04). */
+
+/* ── Spotlight: a radial highlight that follows the cursor ── */
+.spotlight { position: relative; }
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), var(--spotlight, rgba(37, 99, 235, 0.1)), transparent 70%);
+  transition: opacity 0.25s var(--ease-out);
+}
+.spotlight:hover::before { opacity: 1; }
+[data-theme="dark"] .spotlight { --spotlight: rgba(120, 170, 255, 0.14); }
+
+/* ── Staggered entrance for lists ── */
+.stagger-in { animation: stagger-in 0.4s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 28ms); }
+@keyframes stagger-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* ── Ping rings (live radar) ── */
+@keyframes ping-ring {
+  0% { transform: scale(0.2); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* ── Invalid-drop shake ── */
+@keyframes shake {
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+/* ── Gold sweep when a lead is won ── */
+@keyframes won-sweep {
+  0% { opacity: 0; transform: translateX(-120%) skewX(-18deg); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(220%) skewX(-18deg); }
+}
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, 0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate3d(var(--dx), var(--dy), 0) rotate(var(--rot)); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight::before { display: none; }
+  .stagger-in { animation: none; }
+}

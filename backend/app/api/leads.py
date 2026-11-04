@@ -5,8 +5,10 @@ from app.auth.deps import CurrentUser, get_current_user, write_roles
 from app.db import get_db
 from app.models.activity import LeadActivity, LeadStatusHistory
 from app.models.lead import Lead
+from app.models.representative import Representative
 from app.schemas.lead import LeadListResponse, LeadOut, LeadStatusUpdate, NextBestActionOut
 from app.services import dashboard_service, lead_service
+from app.services.dashboard_service import EFFECTIVE_TERRITORY
 from app.services.ai.next_best_action import recommend_next_action
 from app.services.audit_service import record_audit
 from app.integrations import quip_client
@@ -28,6 +30,7 @@ def list_leads(
     representative_id: str | None = None,
     search: str | None = None,
     source: str | None = None,
+    territory: str | None = None,
     limit: int = Query(50, le=200),
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -44,6 +47,12 @@ def list_leads(
         query = query.filter(Lead.representative_id == representative_id)
     if source:
         query = query.filter(Lead.source == source)
+    if territory:
+        # "Unassigned" is how the territory map labels leads with no territory.
+        wanted = "" if territory == "Unassigned" else territory
+        query = query.outerjoin(Representative, Representative.id == Lead.representative_id).filter(
+            EFFECTIVE_TERRITORY == wanted
+        )
     if search:
         like = f"%{search}%"
         query = query.filter((Lead.company.like(like)) | (Lead.contact_name.like(like)) | (Lead.lead_number.like(like)))

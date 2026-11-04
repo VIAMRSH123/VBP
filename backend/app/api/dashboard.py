@@ -69,6 +69,16 @@ def get_dashboard(db: Session = Depends(get_db), current: CurrentUser = Depends(
     }
 
 
+@router.get("/territories")
+def territories(
+    representative_id: str | None = None,
+    db: Session = Depends(get_db),
+    current: CurrentUser = Depends(get_current_user),
+):
+    rep_id = _scoped_rep_id(current, representative_id)
+    return {"territories": dashboard_service.get_territory_stats(db, rep_id)}
+
+
 @router.get("/executive-insights")
 def executive_insights(db: Session = Depends(get_db), current: CurrentUser = Depends(insight_roles)):
     refresh_gold_metrics(db)
