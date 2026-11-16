@@ -44,7 +44,7 @@ fixtures, so each item below is a self-contained sitting.
 - [x] **A3 — `test_duplicate_detection.py`**. Exact phone repeat merges into the existing lead
       (the behaviour `SALES_REP_GUIDE.md` promises reps), same company with a different contact,
       and a genuinely new lead that must not be merged.
-- [ ] **A4 — `test_lead_service.py`** for the status engine. Assert every legal transition in
+- [x] **A4 — `test_lead_service.py`** for the status engine. Assert every legal transition in
       `STATUS_TRANSITIONS` is accepted, every illegal one is rejected, and that each accepted
       transition writes a `lead_status_history` row.
 - [ ] **A5 — `test_orchestrator.py`** for the 12-step pipeline. One end-to-end run from raw message
@@ -111,3 +111,4 @@ commit as the work, so the sha isn't known yet — leave it out.
 - 2026-10-19 — A1 — test: cover lead extraction and fix phone, quantity and email-only bugs it exposed
 - 2026-10-27 — A2 — test: cover lead validation rules and SAP record validation
 - 2026-11-06 — A3 — test: cover duplicate detection (phone repeat, fuzzy company, closed leads)
+- 2026-11-16 — A4 — test: cover the lead status engine (every legal/illegal transition, history trail)
