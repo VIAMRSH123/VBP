@@ -47,9 +47,13 @@ fixtures, so each item below is a self-contained sitting.
 - [x] **A4 — `test_lead_service.py`** for the status engine. Assert every legal transition in
       `STATUS_TRANSITIONS` is accepted, every illegal one is rejected, and that each accepted
       transition writes a `lead_status_history` row.
-- [ ] **A5 — `test_orchestrator.py`** for the 12-step pipeline. One end-to-end run from raw message
+- [x] **A5 — `test_orchestrator.py`** for the 12-step pipeline. One end-to-end run from raw message
       to assigned lead, idempotency on a replayed execution id, retry with backoff on a transient
       failure, and the Dead Letter Queue entry once retries are exhausted.
+      *Done. Not in the code, so not tested: idempotency on a replayed execution id — every run
+      gets a fresh execution row; a replayed message is de-duplicated by phone (tested instead).
+      Exposed and fixed a bug: a dead-lettered run recorded the last completed stage, not the one
+      that failed.*
 - [ ] **A6 — `test_enrichment.py`**. Industry/customer-type/category/territory inference, lead score
       within 0–100, deal-size estimate, and that confidence metadata is recorded on the decision.
 - [ ] **A7 — `test_representative_matching.py`**. Territory + product match, language preference,
@@ -112,3 +116,4 @@ commit as the work, so the sha isn't known yet — leave it out.
 - 2026-10-27 — A2 — test: cover lead validation rules and SAP record validation
 - 2026-11-06 — A3 — test: cover duplicate detection (phone repeat, fuzzy company, closed leads)
 - 2026-11-16 — A4 — test: cover the lead status engine (every legal/illegal transition, history trail)
+- 2026-11-26 — A5 — test: cover the orchestrator pipeline and fix the stage recorded on dead-lettered runs

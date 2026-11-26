@@ -231,6 +231,8 @@ class PipelineOrchestrator:
             return execution
 
         except PipelineFailure as failure:
+            # current_stage only advances when a stage succeeds and emits; point it at the one that failed.
+            execution.current_stage = failure.stage
             self._send_to_dlq(execution, {"raw_message": raw_message, "sender_phone": sender_phone}, str(failure.original))
             return execution
 
@@ -320,6 +322,7 @@ class PipelineOrchestrator:
                 "kind": "sap_record", "entity": entity, "key": record.external_id.split(":", 1)[1],
                 "external_system": external_system, "bronze_id": bronze_id,
             }
+            execution.current_stage = failure.stage
             self._send_to_dlq(execution, payload, str(failure.original))
             return SapLeadOutcome("failed", execution, lead)
 
